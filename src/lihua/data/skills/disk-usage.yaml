@@ -1,0 +1,57 @@
+name: disk_usage
+description: 查看磁盘空间使用情况（df + du 分析大文件）
+version: 0.1
+category: system
+author: lihua
+triggers:
+  - 磁盘空间
+  - 磁盘占用
+  - 磁盘使用
+  - 磁盘分析
+  - 查看磁盘
+  - 看看磁盘
+  - 看磁盘
+  - 空间占用
+  - 存储空间
+  - 存储占用
+  - 硬盘空间
+  - 硬盘占用
+  - 硬盘使用
+  - 看看硬盘
+  - 看硬盘
+  - 查看硬盘
+  - 空间不够
+  - 空间不足
+  - 磁盘满了
+  - 硬盘满了
+  - 大文件
+  - 占用最大
+  - 占用最多
+  - disk usage
+examples:
+  - 查看磁盘空间
+  - 磁盘占用
+  - 找出大文件
+parameters:
+  - name: path
+    required: false
+    description: 要分析的路径（默认 ~）
+    extract: "(?:查看|看看|分析|查下)?\\s*(?:磁盘|硬盘|空间|存储)?\\s*(?:空间|占用|使用|分析|满)?\\s*(?:([/~\\w\\.\\-]+))?"
+steps:
+  - name: df
+    type: command
+    description: 磁盘分区使用情况
+    command: "df -h | grep -v tmpfs | grep -v udev"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: top_dirs
+    type: command
+    description: 用户目录下占用最大的 20 个目录
+    command: "du -h --max-depth=2 ~ 2>/dev/null | sort -rh | head -20"
+    safety: white
+    timeout: 60
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '磁盘分析完成'"

@@ -1,0 +1,40 @@
+name: file_shred
+description: 安全删除文件（shred 覆写 3 次后删除，不可恢复，谨慎使用）
+version: 0.1
+category: file_adv
+author: lihua
+triggers:
+  - 安全删除
+  - 彻底删除
+  - 粉碎文件
+  - shred删除
+  - 安全擦除
+  - 永久删除
+  - 不可恢复删除
+examples:
+  - 安全删除 secret.txt
+  - 彻底删除 /tmp/sensitive.bin
+parameters:
+  - name: file
+    required: true
+    description: 要安全删除的文件路径
+    extract: "(?:安全删除|彻底删除|粉碎|安全擦除|永久删除|不可恢复删除)\\s+(?:文件\\s+)?(.+?)\\s*$"
+steps:
+  - name: check_file
+    type: command
+    description: 检查文件是否存在
+    command: "ls -la '{{file}}'"
+    safety: white
+    timeout: 5
+    on_failure: stop
+  - name: shred
+    type: command
+    description: 用 shred 覆写 3 次后删除（不可恢复）
+    command: "shred -uvz -n 3 '{{file}}'"
+    safety: grey
+    confirm: "⚠️ 安全删除 {{file}}（不可恢复！将覆写 3 次后删除）"
+    timeout: 300
+    on_failure: stop
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '安全删除完成：{{file}}'"

@@ -1,0 +1,67 @@
+name: system_update
+description: 更新系统软件包（apt + flatpak + snap 一键全更新）
+version: 0.1
+category: system
+author: lihua
+triggers:
+  - 更新系统
+  - 系统更新
+  - 升级系统
+  - 系统升级
+  - 更新软件
+  - 软件更新
+  - 更新一下
+  - 升级一下
+  - 检查更新
+  - update
+  - upgrade
+  - update system
+examples:
+  - 更新系统
+  - 更新一下软件
+  - 系统升级
+parameters: []
+steps:
+  - name: apt_update
+    type: command
+    description: 刷新 apt 软件包索引
+    command: "pkexec apt update"
+    safety: grey
+    confirm: "刷新软件包索引（apt update，需要管理员权限）"
+    timeout: 120
+    on_failure: continue
+  - name: apt_upgrade
+    type: command
+    description: 升级已安装的 apt 软件包
+    command: "pkexec apt upgrade -y"
+    safety: grey
+    confirm: "升级已安装的软件包（apt upgrade，需要管理员权限，可能耗时较长）"
+    timeout: 1800
+    on_failure: continue
+  - name: flatpak_update
+    type: command
+    description: 更新所有 Flatpak 应用
+    command: "flatpak update -y --noninteractive"
+    safety: grey
+    confirm: "更新所有 Flatpak 应用"
+    timeout: 1800
+    on_failure: continue
+  - name: snap_refresh
+    type: command
+    description: 刷新 Snap 应用
+    command: "pkexec snap refresh"
+    safety: grey
+    confirm: "刷新所有 Snap 应用（需要管理员权限）"
+    timeout: 1800
+    on_failure: continue
+  - name: autoremove
+    type: command
+    description: 清理不再需要的依赖包
+    command: "pkexec apt autoremove -y"
+    safety: grey
+    confirm: "清理不再需要的依赖包（apt autoremove）"
+    timeout: 300
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '系统更新完成'"

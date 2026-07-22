@@ -1,0 +1,803 @@
+name: beautify_ubuntu
+description: "美化 Ubuntu 桌面，实现 macOS / Elementary OS 精致度，或开启底层性能优化（字体渲染 / GPU / 动画）。v0.7.11 macOS 风格新增字体安装 + GDM 登录界面 + GRUB 美化 + 壁纸 + 窗口按钮位置等极致细节"
+version: 0.3
+category: desktop
+author: lihua
+triggers:
+  - 美化ubuntu
+  - 美化桌面
+  - 美化系统
+  - macos风格
+  - mac风格
+  - mac os风格
+  - macOS风格
+  - elementary风格
+  - 让ubuntu好看
+  - 桌面太丑
+  - 桌面丑
+  - ubuntu太丑
+  - 主题美化
+  - 精致度
+  - 优化ubuntu
+  - 优化系统
+  - 提升性能
+  - 系统优化
+  - gpu加速
+  - GPU加速
+  - 字体模糊
+  - 字体太模糊
+  - 太模糊
+  - 字体渲染
+  - 动画卡顿
+  - 装修系统
+  - 装修ubuntu
+  - 登录界面
+  - 开机界面
+  - grub美化
+  - GRUB美化
+examples:
+  - 美化ubuntu
+  - 让我的ubuntu像macos
+  - 装elementary风格
+  - 桌面太丑了
+  - 提升桌面精致度
+  - 优化系统性能
+  - 开启GPU加速
+  - 字体太模糊
+  - 动画卡顿
+  - 美化登录界面
+  - 美化开机引导
+parameters:
+  - name: target
+    required: false
+    description: 目标风格或优化模式（macos / elementary / performance / restore）
+    extract: "(macos|mac os|elementary|performance|性能|优化|gpu|字体|动画|恢复|还原|默认)"
+    default: macos
+steps:
+  # === macOS 风格美化（v0.7.11 极致版）===
+  # 全方位覆盖：依赖 + GTK + 图标 + 光标 + Shell 主题 + 字体 + 登录界面 + GRUB + 壁纸 + 窗口按钮 + GNOME 扩展
+
+  - name: install_deps
+    type: command
+    condition: "{{target}} == macos || {{target}} == elementary"
+    description: 安装依赖工具（git + wget + unzip + gnome-tweaks + extension-manager + fonts-noto-color-emoji）
+    command: "pkexec apt install -y git wget unzip gnome-tweaks gnome-shell-extension-manager fonts-noto-color-emoji"
+    safety: grey
+    confirm: "安装美化所需依赖工具（git wget unzip gnome-tweaks extension-manager noto-color-emoji）"
+    timeout: 180
+    on_failure: stop
+
+  # --- 主题（GTK + 图标 + 光标 + Shell）---
+  - name: install_whitesur_gtk
+    type: command
+    condition: "{{target}} == macos"
+    description: 安装 WhiteSur GTK 主题（macOS 风格）
+    command: |
+      mkdir -p ~/.themes
+      cd /tmp
+      rm -rf WhiteSur-gtk-theme
+      git clone --depth 1 https://github.com/vinceliuice/WhiteSur-gtk-theme.git
+      cd WhiteSur-gtk-theme
+      ./install.sh -t all -N glassy -s standard --tweaks round solid
+      cd /tmp
+      rm -rf WhiteSur-gtk-theme
+      echo 'WhiteSur GTK 主题已安装到 ~/.themes'
+    safety: grey
+    confirm: "下载并安装 WhiteSur GTK 主题（macOS 风格，约 50MB）"
+    timeout: 300
+    on_failure: continue
+
+  - name: install_whitesur_icons
+    type: command
+    condition: "{{target}} == macos"
+    description: 安装 WhiteSur 图标主题
+    command: |
+      mkdir -p ~/.icons
+      cd /tmp
+      rm -rf WhiteSur-icon-theme
+      git clone --depth 1 https://github.com/vinceliuice/WhiteSur-icon-theme.git
+      cd WhiteSur-icon-theme
+      ./install.sh
+      cd /tmp
+      rm -rf WhiteSur-icon-theme
+      echo 'WhiteSur 图标主题已安装到 ~/.icons'
+    safety: grey
+    confirm: "下载并安装 WhiteSur 图标主题（macOS 风格，约 80MB）"
+    timeout: 300
+    on_failure: continue
+
+  - name: install_whitesur_cursor
+    type: command
+    condition: "{{target}} == macos"
+    description: 安装 WhiteSur 光标主题
+    command: |
+      mkdir -p ~/.icons
+      cd /tmp
+      rm -rf WhiteSur-cursors
+      git clone --depth 1 https://github.com/vinceliuice/WhiteSur-cursors.git
+      cd WhiteSur-cursors
+      ./install.sh
+      cd /tmp
+      rm -rf WhiteSur-cursors
+      echo 'WhiteSur 光标主题已安装到 ~/.icons'
+    safety: grey
+    confirm: "下载并安装 WhiteSur 光标主题（macOS 风格）"
+    timeout: 180
+    on_failure: continue
+
+  - name: apply_whitesur_theme
+    type: command
+    condition: "{{target}} == macos"
+    description: 应用 WhiteSur 主题（GTK + 图标 + 光标 + 窗口 + Shell）
+    command: |
+      gsettings set org.gnome.desktop.interface gtk-theme 'WhiteSur-Dark'
+      gsettings set org.gnome.desktop.interface icon-theme 'WhiteSur-dark'
+      gsettings set org.gnome.desktop.interface cursor-theme 'WhiteSur-cursors'
+      gsettings set org.gnome.desktop.wm.preferences theme 'WhiteSur-Dark'
+      gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
+      gsettings set org.gnome.desktop.interface cursor-size 32
+      # 启用 user-theme 扩展（让 Shell 主题生效）
+      gnome-extensions enable user-theme@gnome-shell-extensions.gcampax.github.com 2>/dev/null || true
+      gsettings set org.gnome.shell.extensions.user-theme name 'WhiteSur-Dark'
+      echo '已应用 WhiteSur macOS 风格主题（GTK + 图标 + 光标 + Shell）'
+    safety: grey
+    confirm: "应用 WhiteSur 主题（GTK + 图标 + 光标 + Shell + 字体）"
+    timeout: 10
+    on_failure: continue
+
+  # --- 字体安装（v0.7.11 新增：极致字体追求）---
+  # 苹果的字体方案：界面用 SF Pro，等宽用 SF Mono，中文用苹方
+  # Linux 对应方案：界面用 Source Han Sans（思源黑体），等宽用 JetBrains Mono，中文衬线用 Source Han Serif
+
+  - name: install_source_han_fonts
+    type: command
+    condition: "{{target}} == macos"
+    description: 安装思源黑体 + 思源宋体（中文界面/文档字体，等价于 macOS 苹方/宋体）
+    command: |
+      # 方法 1：apt 仓库的 fonts-noto-cjk 就是思源黑体（基于 Source Han Sans）
+      pkexec apt install -y fonts-noto-cjk fonts-noto-cjk-extra
+      # 方法 2：从 GitHub 下载完整 OTF 全字重（更精致，含 ExtraLight 到 Heavy 7 个字重）
+      mkdir -p ~/.local/share/fonts/source-han
+      cd /tmp
+      rm -rf SourceHanSansSC SourceHanSerifSC
+      # 思源黑体 SC（无衬线，界面字体）
+      wget -q -O SourceHanSansSC.zip "https://github.com/adobe-fonts/source-han-sans/releases/download/2.004R/SourceHanSansSC.zip"
+      unzip -q SourceHanSansSC.zip -d SourceHanSansSC
+      cp SourceHanSansSC/OTF/SimplifiedChinese/*.otf ~/.local/share/fonts/source-han/ 2>/dev/null || true
+      cp SourceHanSansSC/Variable/OTF/*.otf ~/.local/share/fonts/source-han/ 2>/dev/null || true
+      # 思源宋体 SC（衬线，文档字体）
+      wget -q -O SourceHanSerifSC.zip "https://github.com/adobe-fonts/source-han-serif/releases/download/2.001R/01_SourceHanSerifSC.zip"
+      unzip -q SourceHanSerifSC.zip -d SourceHanSerifSC
+      cp SourceHanSerifSC/OTF/SimplifiedChinese/*.otf ~/.local/share/fonts/source-han/ 2>/dev/null || true
+      rm -rf SourceHanSansSC SourceHanSerifSC SourceHanSansSC.zip SourceHanSerifSC.zip
+      # 刷新字体缓存
+      fc-cache -fv ~/.local/share/fonts/source-han/ >/dev/null 2>&1
+      echo '思源黑体 + 思源宋体已安装到 ~/.local/share/fonts/source-han/'
+    safety: grey
+    confirm: "安装思源黑体 + 思源宋体（中文界面/文档字体，从 Adobe GitHub 下载全字重 OTF，约 100MB）"
+    timeout: 300
+    on_failure: continue
+
+  - name: install_jetbrains_mono
+    type: command
+    condition: "{{target}} == macos"
+    description: 安装 JetBrains Mono（编程等宽字体，等价于 macOS SF Mono）
+    command: |
+      mkdir -p ~/.local/share/fonts/jetbrains-mono
+      cd /tmp
+      wget -q -O JetBrainsMono.zip "https://download.jetbrains.com/fonts/JetBrainsMono-2.304.zip"
+      unzip -q JetBrainsMono.zip -d JetBrainsMono
+      cp JetBrainsMono/fonts/ttf/*.ttf ~/.local/share/fonts/jetbrains-mono/ 2>/dev/null || true
+      cp JetBrainsMono/fonts/otf/*.otf ~/.local/share/fonts/jetbrains-mono/ 2>/dev/null || true
+      rm -rf JetBrainsMono JetBrainsMono.zip
+      fc-cache -fv ~/.local/share/fonts/jetbrains-mono/ >/dev/null 2>&1
+      echo 'JetBrains Mono 已安装到 ~/.local/share/fonts/jetbrains-mono/'
+    safety: grey
+    confirm: "安装 JetBrains Mono 编程等宽字体（含 Nerd Font 图标补丁，约 20MB）"
+    timeout: 120
+    on_failure: continue
+
+  - name: install_fira_code
+    type: command
+    condition: "{{target}} == macos"
+    description: 安装 Fira Code（连字编程字体，可选）
+    command: |
+      # apt 仓库有 fonts-firacode（但可能不是最新版）
+      pkexec apt install -y fonts-firacode
+      # 从 GitHub 下载最新版（含连字特性）
+      mkdir -p ~/.local/share/fonts/fira-code
+      cd /tmp
+      wget -q -O FiraCode.zip "https://github.com/tonsky/FiraCode/releases/download/6.2/Fira_Code_v6.2.zip"
+      unzip -q FiraCode.zip -d FiraCode
+      cp FiraCode/ttf/*.ttf ~/.local/share/fonts/fira-code/ 2>/dev/null || true
+      rm -rf FiraCode FiraCode.zip
+      fc-cache -fv ~/.local/share/fonts/fira-code/ >/dev/null 2>&1
+      echo 'Fira Code 已安装到 ~/.local/share/fonts/fira-code/'
+    safety: grey
+    confirm: "安装 Fira Code 连字编程字体（含编程连字特性，约 5MB）"
+    timeout: 120
+    on_failure: continue
+
+  - name: apply_fonts_to_gnome
+    type: command
+    condition: "{{target}} == macos"
+    description: 应用字体到 GNOME（界面/文档/等宽/标题栏 + 字体大小）
+    command: |
+      # 界面字体：思源黑体 SC（等价于 macOS 苹方）
+      gsettings set org.gnome.desktop.interface font-name 'Source Han Sans SC 11'
+      # 文档字体：思源宋体 SC（等价于 macOS 宋体）
+      gsettings set org.gnome.desktop.interface document-font-name 'Source Han Serif SC 11'
+      # 等宽字体：JetBrains Mono（等价于 macOS SF Mono）
+      gsettings set org.gnome.desktop.interface monospace-font-name 'JetBrains Mono 11'
+      # 标题栏字体：思源黑体 SC Bold（加粗增强视觉层次）
+      gsettings set org.gnome.desktop.wm.preferences titlebar-font 'Source Han Sans SC Bold 11'
+      # 文本缩放：100%（不缩放，避免模糊）
+      gsettings set org.gnome.desktop.interface text-scaling-factor 1.0
+      # 光标大小：32（macOS 风格略大）
+      gsettings set org.gnome.desktop.interface cursor-size 32
+      echo '已应用字体方案：思源黑体（界面/标题）+ 思源宋体（文档）+ JetBrains Mono（等宽）'
+    safety: grey
+    confirm: "应用字体方案到 GNOME（界面=思源黑体 / 文档=思源宋体 / 等宽=JetBrains Mono）"
+    timeout: 5
+    on_failure: continue
+
+  - name: config_font_rendering_extreme
+    type: command
+    condition: "{{target}} == macos"
+    description: 极致字体渲染配置（fontconfig + gsettings，让字体在 LCD 屏幕最清晰）
+    command: |
+      # gsettings：rgba 次像素抗锯齿 + slight 微调（平衡清晰度和形状）
+      gsettings set org.gnome.desktop.interface font-antialiasing 'rgba'
+      gsettings set org.gnome.desktop.interface font-hinting 'slight'
+      # fontconfig：全局字体渲染参数（更精细的控制）
+      mkdir -p ~/.config/fontconfig
+      cat > ~/.config/fontconfig/fonts.conf <<'FONTCONF'
+      <?xml version="1.0"?>
+      <!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+      <fontconfig>
+        <!-- 全局抗锯齿 + 次像素 RGB + 微调 -->
+        <match target="pattern">
+          <edit name="rgba"><const>rgb</const></edit>
+          <edit name="hinting"><bool>true</bool></edit>
+          <edit name="autohint"><bool>false</bool></edit>
+          <edit name="hintstyle"><const>hintslight</const></edit>
+          <edit name="antialias"><bool>true</bool></edit>
+          <edit name="lcdfilter"><const>lcddefault</const></edit>
+          <edit name="embeddedbitmap"><bool>false</bool></edit>
+        </match>
+        <!-- 默认字体映射：sans-serif → 思源黑体，serif → 思源宋体，monospace → JetBrains Mono -->
+        <match target="pattern">
+          <test name="family"><string>sans-serif</string></test>
+          <edit name="family" mode="prepend" binding="strong">
+            <string>Source Han Sans SC</string>
+          </edit>
+        </match>
+        <match target="pattern">
+          <test name="family"><string>serif</string></test>
+          <edit name="family" mode="prepend" binding="strong">
+            <string>Source Han Serif SC</string>
+          </edit>
+        </match>
+        <match target="pattern">
+          <test name="family"><string>monospace</string></test>
+          <edit name="family" mode="prepend" binding="strong">
+            <string>JetBrains Mono</string>
+          </edit>
+        </match>
+      </fontconfig>
+      FONTCONF
+      echo '极致字体渲染已配置（rgba 次像素 + slight 微调 + lcdfilter + 默认字体映射）'
+      echo '注：注销重新登录后完全生效'
+    safety: grey
+    confirm: "配置极致字体渲染（fontconfig 全局抗锯齿 + 次像素 RGB + 微调 + 默认字体映射）"
+    timeout: 5
+    on_failure: continue
+
+  # --- GNOME 扩展 + dock + 毛玻璃 ---
+  - name: install_gnome_extensions
+    type: command
+    condition: "{{target}} == macos"
+    description: 安装并启用 GNOME 扩展（dash-to-dock + blur-my-shell + user-theme + AppIndicator）
+    command: |
+      # 安装扩展管理工具 + 常用扩展包
+      pkexec apt install -y gnome-shell-extensions gnome-shell-extension-appindicator
+      # 启用 user-theme（自定义 shell 主题）
+      gnome-extensions enable user-theme@gnome-shell-extensions.gcampax.github.com 2>/dev/null || true
+      # 启用 AppIndicator（托盘图标支持）
+      gnome-extensions enable AppIndicator@ubuntu.com 2>/dev/null || true
+      # 设置 shell 主题为 WhiteSur
+      gsettings set org.gnome.shell.extensions.user-theme name 'WhiteSur-Dark'
+      echo '已安装并启用 GNOME 扩展（user-theme + AppIndicator）'
+      echo '提示：以下扩展需通过 Extension Manager 图形化安装（更稳定）：'
+      echo '  1. Dash to Dock（macOS 风格 dock）'
+      echo '  2. Blur my Shell（毛玻璃效果）'
+      echo '  3. Logo Menu（Apple Logo 风格菜单，可选）'
+    safety: grey
+    confirm: "安装并启用 GNOME 扩展（user-theme + AppIndicator + 提示安装 dash-to-dock 等）"
+    timeout: 60
+    on_failure: continue
+
+  - name: config_dash_to_dock
+    type: command
+    condition: "{{target}} == macos"
+    description: 配置 dash-to-dock 为 macOS 风格（底部居中 + 动态透明 + 圆点指示器）
+    command: |
+      if gnome-extensions info dash-to-dock@micxgx.gmail.com >/dev/null 2>&1; then
+        gnome-extensions enable dash-to-dock@micxgx.gmail.com
+        gsettings set org.gnome.shell.extensions.dash-to-dock dock-position 'BOTTOM'
+        gsettings set org.gnome.shell.extensions.dash-to-dock extend-height false
+        gsettings set org.gnome.shell.extensions.dash-to-dock dock-fixed false
+        gsettings set org.gnome.shell.extensions.dash-to-dock dash-max-icon-size 48
+        gsettings set org.gnome.shell.extensions.dash-to-dock transparency-mode 'DYNAMIC'
+        gsettings set org.gnome.shell.extensions.dash-to-dock running-indicator-style 'DOTS'
+        # macOS 风格：dock 内边距 + 圆角
+        gsettings set org.gnome.shell.extensions.dash-to-dock dash-max-icon-size 48
+        gsettings set org.gnome.shell.extensions.dash-to-dock icon-margin 8
+        echo 'dash-to-dock 已配置为 macOS 风格（底部居中 + 动态透明 + 圆点指示器）'
+      else
+        echo 'dash-to-dock 未安装，请通过 Extension Manager 安装'
+      fi
+    safety: grey
+    confirm: "配置 dash-to-dock 为 macOS 风格（底部居中 + 动态透明 + 圆点指示器）"
+    timeout: 10
+    on_failure: continue
+
+  - name: config_blur_my_shell
+    type: command
+    condition: "{{target}} == macos"
+    description: 配置 blur-my-shell 毛玻璃效果（面板 + 概览 + 应用文件夹）
+    command: |
+      if gnome-extensions info blur-my-shell@aunetx >/dev/null 2>&1; then
+        gnome-extensions enable blur-my-shell@aunetx
+        gsettings set org.gnome.shell.extensions.blur-my-shell.appfolder blur true
+        gsettings set org.gnome.shell.extensions.blur-my-shell.panel blur true
+        gsettings set org.gnome.shell.extensions.blur-my-shell.overview blur true
+        # 毛玻璃强度（sigma 越大越模糊，macOS 风格约 20）
+        gsettings set org.gnome.shell.extensions.blur-my-shell.panel sigma 20
+        gsettings set org.gnome.shell.extensions.blur-my-shell.overview sigma 20
+        echo 'blur-my-shell 毛玻璃效果已启用（强度 20，macOS 风格）'
+      else
+        echo 'blur-my-shell 未安装，请通过 Extension Manager 安装'
+      fi
+    safety: grey
+    confirm: "配置 blur-my-shell 毛玻璃效果（面板 + 概览 + 强度 20）"
+    timeout: 10
+    on_failure: continue
+
+  # --- 窗口按钮位置（macOS 风格：左上 close + 右上 minimize/maximize）---
+  - name: config_window_buttons_macos
+    type: command
+    condition: "{{target}} == macos"
+    description: 配置窗口按钮位置为 macOS 风格（关闭/最小化/最大化 放到左上）
+    command: |
+      # GNOME 42+ 的 button-layout：close,minimize,maximize:appmenu
+      # macOS 顺序：close → minimize → maximize（从左到右）
+      gsettings set org.gnome.desktop.wm.preferences button-layout 'close,minimize,maximize:appmenu'
+      echo '窗口按钮已配置为 macOS 风格（左上：关闭 → 最小化 → 最大化）'
+    safety: grey
+    confirm: "配置窗口按钮位置为 macOS 风格（关闭/最小化/最大化放到左上）"
+    timeout: 5
+    on_failure: continue
+
+  # --- 壁纸自动下载 + 应用（v0.7.11 新增）---
+  - name: download_macos_wallpaper
+    type: command
+    condition: "{{target}} == macos"
+    description: 下载 macOS Sonoma/Sequoia 风格壁纸
+    command: |
+      mkdir -p ~/Pictures/Wallpapers
+      cd ~/Pictures/Wallpapers
+      # 下载 macOS Sonoma 默认壁纸（动态壁纸的静态版本）
+      wget -q -O macos-sonoma.jpg "https://images.unsplash.com/photo-1707343843598-39755a49c742?w=3840&q=85" || \
+        wget -q -O macos-sonoma.jpg "https://raw.githubusercontent.com/vinceliuice/WhiteSur-wallpaper/master/download/01-WhiteSur.jpg"
+      # 备选：Vinceliuice 的 WhiteSur 壁纸（与 WhiteSur 主题配套）
+      if [ ! -s macos-sonoma.jpg ]; then
+        wget -q -O macos-sonoma.jpg "https://github.com/vinceliuice/WhiteSur-wallpaper/raw/master/download/01-WhiteSur.jpg"
+      fi
+      ls -la macos-sonoma.jpg
+      echo "壁纸已下载到 ~/Pictures/Wallpapers/macos-sonoma.jpg"
+    safety: grey
+    confirm: "下载 macOS 风格壁纸到 ~/Pictures/Wallpapers/macos-sonoma.jpg（约 2MB）"
+    timeout: 60
+    on_failure: continue
+
+  - name: set_wallpaper
+    type: command
+    condition: "{{target}} == macos"
+    description: 设置桌面壁纸 + 锁屏壁纸
+    command: |
+      WALLPAPER=~/Pictures/Wallpapers/macos-sonoma.jpg
+      if [ -f "$WALLPAPER" ]; then
+        # 桌面壁纸
+        gsettings set org.gnome.desktop.background picture-uri "file://$WALLPAPER"
+        gsettings set org.gnome.desktop.background picture-uri-dark "file://$WALLPAPER"
+        # 锁屏壁纸（与桌面一致）
+        gsettings set org.gnome.desktop.screensaver picture-uri "file://$WALLPAPER"
+        # 模式：缩放（保持比例填满屏幕）
+        gsettings set org.gnome.desktop.background picture-options 'zoom'
+        gsettings set org.gnome.desktop.screensaver picture-options 'zoom'
+        echo '已设置桌面 + 锁屏壁纸为 macOS 风格'
+      else
+        echo '壁纸文件不存在，跳过壁纸设置'
+      fi
+    safety: grey
+    confirm: "设置桌面 + 锁屏壁纸为 macOS 风格壁纸"
+    timeout: 5
+    on_failure: continue
+
+  # --- GDM 登录界面美化（v0.7.11 新增）---
+  # GDM 是 GNOME 登录界面，默认用 Ubuntu Yaru 主题。修改它需要 sudo。
+  # 方案：安装 gdm-settings 工具（图形化设置 GDM 主题/壁纸/字体）
+
+  - name: install_gdm_settings
+    type: command
+    condition: "{{target}} == macos"
+    description: 安装 gdm-settings 工具（用于图形化配置 GDM 登录界面）
+    command: |
+      # 添加 gdm-settings 的 PPA（Ubuntu 官方仓库可能没有最新版）
+      # 用 apt 直接安装（Ubuntu 23.04+ 自带）
+      if ! command -v gdm-settings >/dev/null 2>&1; then
+        pkexec apt install -y gdm-settings || pkexec snap install gdm-settings
+      fi
+      echo 'gdm-settings 工具已安装'
+    safety: grey
+    confirm: "安装 gdm-settings 工具（用于图形化配置 GDM 登录界面主题/壁纸/字体）"
+    timeout: 120
+    on_failure: continue
+
+  - name: backup_gdm_resources
+    type: command
+    condition: "{{target}} == macos"
+    description: 备份 GDM 原始 gnome-shell 资源文件（便于恢复）
+    command: |
+      # 备份 GDM 主题资源（gresource 二进制包，包含登录界面所有图形资源）
+      TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+      BACKUP_DIR=~/.local/share/lihua/backups/gdm_$TIMESTAMP
+      mkdir -p "$BACKUP_DIR"
+      # 备份主 gresource 文件
+      if [ -f /usr/share/gnome-shell/gnome-shell-theme.gresource ]; then
+        pkexec cp /usr/share/gnome-shell/gnome-shell-theme.gresource "$BACKUP_DIR/" 2>/dev/null || true
+      fi
+      # 备份 GDM 配置
+      if [ -f /etc/gdm3/gdm.conf ]; then
+        pkexec cp /etc/gdm3/gdm.conf "$BACKUP_DIR/" 2>/dev/null || true
+      fi
+      # 记录当前 GNOME Shell 主题设置
+      pkexec --user gdm gsettings get org.gnome.shell.extensions.user-theme name > "$BACKUP_DIR/gdm_user_theme.txt" 2>/dev/null || true
+      ls -la "$BACKUP_DIR/"
+      echo "GDM 资源已备份到 $BACKUP_DIR"
+    safety: grey
+    confirm: "备份 GDM 登录界面原始资源文件到 ~/.local/share/lihua/backups/（便于恢复）"
+    timeout: 10
+    on_failure: continue
+
+  - name: apply_gdm_whitesur
+    type: command
+    condition: "{{target}} == macos"
+    description: 让 GDM 登录界面使用 WhiteSur 主题（macOS 风格登录界面）
+    command: |
+      # 方案 1：如果 WhiteSur-gtk-theme 提供了 gdm.sh 安装脚本
+      if [ -d ~/.themes/WhiteSur-Dark ]; then
+        cd /tmp
+        rm -rf WhiteSur-gtk-theme
+        git clone --depth 1 https://github.com/vinceliuice/WhiteSur-gtk-theme.git
+        cd WhiteSur-gtk-theme
+        # WhiteSur-gtk-theme 的 gdm.sh 脚本会重新编译 gresource 让 GDM 用 WhiteSur 主题
+        pkexec ./gdm.sh -t all -N glassy --tweaks round solid || \
+          echo 'GDM 主题安装失败，可手动运行：pkexec ./gdm.sh'
+        cd /tmp
+        rm -rf WhiteSur-gtk-theme
+        echo 'GDM 登录界面已应用 WhiteSur 主题（macOS 风格）'
+      else
+        echo 'WhiteSur 主题未安装，跳过 GDM 主题应用'
+      fi
+    safety: grey
+    confirm: "让 GDM 登录界面使用 WhiteSur macOS 风格主题（需管理员权限重新编译 gnome-shell gresource）"
+    timeout: 120
+    on_failure: continue
+
+  - name: set_gdm_wallpaper
+    type: command
+    condition: "{{target}} == macos"
+    description: 设置 GDM 登录界面壁纸（与桌面壁纸一致）
+    command: |
+      # 方案：通过 gdm-settings 工具设置 GDM 壁纸（图形化工具的命令行接口）
+      WALLPAPER=~/Pictures/Wallpapers/macos-sonoma.jpg
+      if [ -f "$WALLPAPER" ] && command -v gdm-settings >/dev/null 2>&1; then
+        # gdm-settings 提供 CLI 设置壁纸
+        pkexec gdm-settings set wallpaper "$WALLPAPER" 2>/dev/null || \
+          echo 'GDM 壁纸设置失败，可手动运行：pkexec gdm-settings（图形化界面设置）'
+        echo 'GDM 登录界面壁纸已设置'
+      else
+        echo 'gdm-settings 或壁纸文件不存在，请手动通过 gdm-settings 设置'
+      fi
+    safety: grey
+    confirm: "设置 GDM 登录界面壁纸（与桌面壁纸一致，通过 gdm-settings 工具）"
+    timeout: 10
+    on_failure: continue
+
+  # --- GRUB 美化（v0.7.11 新增）---
+  # GRUB 是开机引导界面，默认黑底白字。美化它需要修改 /etc/default/grub + 主题文件
+
+  - name: install_whitesur_grub_theme
+    type: command
+    condition: "{{target}} == macos"
+    description: 安装 WhiteSur GRUB 主题（macOS 风格开机引导界面）
+    command: |
+      cd /tmp
+      rm -rf WhiteSur-grub-theme
+      git clone --depth 1 https://github.com/vinceliuice/WhiteSur-grub-theme.git
+      cd WhiteSur-grub-theme
+      # WhiteSur-grub-theme 的 install.sh 会自动复制主题到 /boot/grub/themes/ 并修改 /etc/default/grub
+      pkexec ./install.sh
+      cd /tmp
+      rm -rf WhiteSur-grub-theme
+      # 验证主题文件已安装
+      ls /boot/grub/themes/ 2>/dev/null || echo 'GRUB 主题目录不存在'
+      echo 'WhiteSur GRUB 主题已安装到 /boot/grub/themes/'
+    safety: grey
+    confirm: "安装 WhiteSur GRUB 主题（macOS 风格开机引导界面，需管理员权限复制到 /boot/grub/themes/）"
+    timeout: 60
+    on_failure: continue
+
+  - name: config_grub_resolution
+    type: command
+    condition: "{{target}} == macos"
+    description: 配置 GRUB 分辨率（自动检测屏幕分辨率，避免拉伸模糊）
+    command: |
+      # 备份原始 grub 配置
+      pkexec cp /etc/default/grub /etc/default/grub.bak.$(date +%Y%m%d_%H%M%S)
+      # 自动检测当前屏幕分辨率
+      RESOLUTION=$(xrandr 2>/dev/null | grep ' connected primary' | awk '{print $4}' | cut -d'+' -f1 || echo "1920x1080")
+      if [ -z "$RESOLUTION" ] || [ "$RESOLUTION" = "(null)" ]; then
+        RESOLUTION="1920x1080"
+      fi
+      # 设置 GRUB 图形模式分辨率（让 GRUB 界面用屏幕原生分辨率）
+      pkexec sed -i "s/^GRUB_GFXMODE=.*/GRUB_GFXMODE=$RESOLUTION,auto/" /etc/default/grub
+      # 设置 GRUB 负载分辨率（GRUB 传递给 Linux 内核的分辨率）
+      pkexec sed -i "s/^GRUB_GFXPAYLOAD_LINUX=.*/GRUB_GFXPAYLOAD_LINUX=keep/" /etc/default/grub
+      # 确保启用图形终端（不是控制台文本模式）
+      pkexec sed -i "s/^#*GRUB_TERMINAL=.*/GRUB_TERMINAL=console/" /etc/default/grub || echo 'GRUB_TERMINAL=console 已设置'
+      echo "GRUB 分辨率已配置为 $RESOLUTION（自动检测）"
+    safety: grey
+    confirm: "配置 GRUB 分辨率（自动检测屏幕分辨率，避免开机界面拉伸模糊）"
+    timeout: 10
+    on_failure: continue
+
+  - name: config_grub_timeout
+    type: command
+    condition: "{{target}} == macos"
+    description: 配置 GRUB 超时时间（5s → 3s，加快开机速度）
+    command: |
+      # 缩短 GRUB 选择超时（默认 5 秒太长，3 秒足够）
+      pkexec sed -i "s/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=3/" /etc/default/grub
+      # macOS 风格：隐藏 GRUB 菜单（按 Shift 才显示，单系统用户更优雅）
+      # 但 Ubuntu 双系统不能隐藏，所以保留显示但缩短时间
+      pkexec sed -i "s/^#*GRUB_TIMEOUT_STYLE=.*/GRUB_TIMEOUT_STYLE=menu/" /etc/default/grub
+      echo 'GRUB 超时已配置为 3 秒（加快开机速度）'
+    safety: grey
+    confirm: "配置 GRUB 超时时间为 3 秒（加快开机速度，默认 5 秒太长）"
+    timeout: 5
+    on_failure: continue
+
+  - name: update_grub_config
+    type: command
+    condition: "{{target}} == macos"
+    description: 应用 GRUB 更改（update-grub）
+    command: |
+      # 应用所有 GRUB 配置更改（生成新的 grub.cfg）
+      pkexec update-grub
+      echo 'GRUB 配置已更新（重启后开机界面将使用 WhiteSur 主题 + 自动分辨率 + 3 秒超时）'
+    safety: grey
+    confirm: "应用 GRUB 配置更改（update-grub 生成新的 grub.cfg）"
+    timeout: 30
+    on_failure: continue
+
+  # === Elementary 风格（Plank dock + Elementary 主题）===
+  - name: install_plank
+    type: command
+    condition: "{{target}} == elementary"
+    description: 安装 Plank dock（Elementary OS 风格）
+    command: "pkexec apt install -y plank"
+    safety: grey
+    confirm: "安装 Plank dock（Elementary OS 风格的桌面 dock）"
+    timeout: 120
+    on_failure: continue
+
+  - name: install_elementary_icons
+    type: command
+    condition: "{{target}} == elementary"
+    description: 安装 Elementary 图标主题
+    command: "pkexec apt install -y elementary-icon-theme"
+    safety: grey
+    confirm: "安装 Elementary 图标主题"
+    timeout: 60
+    on_failure: continue
+
+  - name: apply_elementary_theme
+    type: command
+    condition: "{{target}} == elementary"
+    description: 应用 Elementary 风格（图标 + 字体 + 启用 Plank）
+    command: |
+      gsettings set org.gnome.desktop.interface icon-theme 'elementary'
+      gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita'
+      gsettings set org.gnome.desktop.interface color-scheme 'prefer-light'
+      # 启用 Plank（添加到自启动）
+      mkdir -p ~/.config/autostart
+      cp /usr/share/applications/plank.desktop ~/.config/autostart/ 2>/dev/null || true
+      nohup plank >/dev/null 2>&1 &
+      echo '已应用 Elementary 风格（浅色 + elementary 图标 + Plank dock）'
+    safety: grey
+    confirm: "应用 Elementary 风格（浅色主题 + elementary 图标 + 启用 Plank dock）"
+    timeout: 10
+    on_failure: continue
+
+  # === Performance 性能优化（v0.7.5 新增）===
+  # 这部分不动主题，专注底层：字体渲染 + 动画 + GPU 检测 + 合成器
+
+  - name: detect_gpu_info
+    type: command
+    condition: "{{target}} in [performance, 性能, 优化, gpu, GPU, 字体, 动画]"
+    description: 检测 GPU 信息（让用户了解自己的硬件 + 驱动状态）
+    command: |
+      echo "=== GPU 硬件 ==="
+      lspci -nn | grep -iE 'vga|3d|display' || echo '未检测到 GPU 设备'
+      echo ""
+      echo "=== 当前会话类型 ==="
+      echo "XDG_SESSION_TYPE=${XDG_SESSION_TYPE:-unknown}"
+      echo "WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-未设置（可能是 X11）}"
+      echo ""
+      echo "=== GPU 渲染器 ==="
+      if command -v glxinfo >/dev/null 2>&1; then
+        glxinfo | grep -iE 'renderer|version' | head -5
+      else
+        echo 'glxinfo 未安装（apt install mesa-utils 可装）'
+      fi
+      echo ""
+      echo "=== 已加载的内核驱动 ==="
+      lsmod | grep -iE 'nvidia|amdgpu|radeon|nouveau|i915' | head -5 || echo '未检测到 GPU 驱动模块'
+    safety: white
+    confirm: "检测 GPU 硬件 + 驱动 + 会话类型（只读操作）"
+    timeout: 10
+    on_failure: continue
+
+  - name: enable_font_smoothing
+    type: command
+    condition: "{{target}} in [performance, 性能, 优化, gpu, GPU, 字体, 动画]"
+    description: 开启字体平滑渲染（次像素 RGB + 微调 hinting）
+    command: |
+      gsettings set org.gnome.desktop.interface font-antialiasing 'rgba'
+      gsettings set org.gnome.desktop.interface font-hinting 'slight'
+      gsettings set org.gnome.desktop.interface text-scaling-factor 1.0
+      echo '字体渲染已优化（rgba 次像素 + slight 微调）'
+      echo '注：注销重新登录后完全生效'
+    safety: grey
+    confirm: "优化字体渲染（次像素 RGB 抗锯齿 + 轻微微调，让字体更清晰）"
+    timeout: 5
+    on_failure: continue
+
+  - name: enable_gnome_animations
+    type: command
+    condition: "{{target}} in [performance, 性能, 优化, gpu, GPU, 字体, 动画]"
+    description: 开启 GNOME 动画（提升交互流畅感）
+    command: |
+      gsettings set org.gnome.desktop.interface enable-animations true
+      gsettings set org.gnome.desktop.interface toolkit-accessibility false
+      echo 'GNOME 动画已开启'
+    safety: grey
+    confirm: "开启 GNOME 动画（让窗口/概览/工作区切换有过渡效果）"
+    timeout: 5
+    on_failure: continue
+
+  - name: install_mesa_tools
+    type: command
+    condition: "{{target}} in [performance, 性能, 优化, gpu, GPU, 字体, 动画]"
+    description: 安装 Mesa 工具集（含 Vulkan / OpenGL 信息查询）
+    command: "pkexec apt install -y mesa-utils vulkan-tools"
+    safety: grey
+    confirm: "安装 Mesa 工具集（mesa-utils + vulkan-tools，用于 GPU 信息查询和基准测试）"
+    timeout: 120
+    on_failure: continue
+
+  - name: config_gnome_perf
+    type: command
+    condition: "{{target}} in [performance, 性能, 优化, gpu, GPU, 字体, 动画]"
+    description: 优化 GNOME 性能相关 gsettings
+    command: |
+      gsettings set org.gnome.desktop.search-problems disable-external false
+      gsettings set org.gnome.desktop.thumbnail-cache maximum-size 5
+      gsettings set org.gnome.desktop.thumbnail-cache maximum-age 30
+      gsettings set org.gnome.desktop.interface locate-pointer false
+      gsettings set org.gnome.desktop.peripherals.keyboard repeat true
+      gsettings set org.gnome.desktop.peripherals.keyboard delay 250
+      gsettings set org.gnome.desktop.peripherals.keyboard interval 30
+      echo 'GNOME 性能相关设置已优化'
+    safety: grey
+    confirm: "优化 GNOME 性能设置（搜索 / 缩略图缓存 / 键盘响应）"
+    timeout: 5
+    on_failure: continue
+
+  - name: cleanup_unnecessary_startup
+    type: command
+    condition: "{{target}} in [performance, 性能, 优化, gpu, GPU, 字体, 动画]"
+    description: 列出并提示清理不必要的自启动项
+    command: |
+      echo "=== 当前用户自启动项 ==="
+      ls -la ~/.config/autostart/ 2>/dev/null || echo '无用户自启动项'
+      echo ""
+      echo "=== 系统级自启动项 ==="
+      ls /etc/xdg/autostart/*.desktop 2>/dev/null | head -10 || echo '无系统自启动项'
+      echo ""
+      echo "提示：如需禁用某个自启动项，可执行："
+      echo "  mv ~/.config/autostart/xxx.desktop ~/.config/autostart/xxx.desktop.bak"
+      echo "或打开「Tweaks → 启动应用程序」图形化管理"
+    safety: white
+    confirm: "列出当前自启动项（只读，不修改任何文件）"
+    timeout: 5
+    on_failure: continue
+
+  # === 恢复默认 ===
+  - name: restore_default
+    type: command
+    condition: "{{target}} == 恢复 || {{target}} == 还原 || {{target}} == 默认"
+    description: 恢复 Ubuntu 默认主题（Yaru + Ubuntu 字体）
+    command: |
+      gsettings set org.gnome.desktop.interface gtk-theme 'Yaru'
+      gsettings set org.gnome.desktop.interface icon-theme 'Yaru'
+      gsettings set org.gnome.desktop.interface cursor-theme 'Yaru'
+      gsettings set org.gnome.desktop.wm.preferences theme 'Yaru'
+      gsettings set org.gnome.desktop.interface color-scheme 'default'
+      gsettings set org.gnome.desktop.interface font-name 'Ubuntu 11'
+      gsettings set org.gnome.desktop.interface document-font-name 'Ubuntu 11'
+      gsettings set org.gnome.desktop.interface monospace-font-name 'Ubuntu Mono 11'
+      gsettings set org.gnome.desktop.wm.preferences titlebar-font 'Ubuntu Bold 11'
+      gsettings set org.gnome.desktop.interface cursor-size 24
+      gsettings set org.gnome.desktop.interface font-antialiasing 'grayscale'
+      gsettings set org.gnome.desktop.interface font-hinting 'slight'
+      gsettings set org.gnome.shell.extensions.user-theme name '' 2>/dev/null || true
+      # 恢复窗口按钮位置（Ubuntu 默认：右上）
+      gsettings set org.gnome.desktop.wm.preferences button-layout 'appmenu:minimize,maximize,close'
+      # 删除自定义 fontconfig
+      rm -f ~/.config/fontconfig/fonts.conf 2>/dev/null || true
+      fc-cache -f
+      echo '已恢复 Ubuntu 默认 Yaru 主题 + Ubuntu 字体 + 右上窗口按钮'
+    safety: grey
+    confirm: "恢复 Ubuntu 默认 Yaru 主题 + Ubuntu 字体 + 窗口按钮位置（右上）"
+    timeout: 10
+    on_failure: continue
+
+  # === 最终提示 ===
+  - name: final_hint
+    type: message
+    condition: "{{target}} in [macos, elementary, 恢复, 还原, 默认]"
+    message: |
+      美化已应用。建议：
+      1. 注销重新登录（Wayland 下必需，让 GNOME Shell 重新加载扩展和主题 + 让字体渲染完全生效）
+      2. 重启电脑（让 GDM 登录界面 + GRUB 开机界面主题完全生效）
+      3. 打开「扩展管理器」安装 dash-to-dock + blur-my-shell（如果尚未安装）
+      4. 打开「Tweaks」微调字体、窗口按钮位置（左上关闭 / 右上最小化最大化）
+      5. 壁纸推荐：在 https://wallhaven.cc 搜索 macOS 风格壁纸
+      6. 字体已安装：思源黑体（界面）+ 思源宋体（文档）+ JetBrains Mono（等宽）+ Fira Code（连字）
+      7. GDM 登录界面 + GRUB 开机界面已应用 WhiteSur 主题
+      8. 如需恢复：执行「lihua 恢复默认主题」
+
+  - name: final_hint_perf
+    type: message
+    condition: "{{target}} in [performance, 性能, 优化, gpu, GPU, 字体, 动画]"
+    message: |
+      底层优化已应用。建议：
+      1. 注销重新登录（让字体渲染和 GNOME 动画设置完全生效）
+      2. GPU 驱动检测：如检测到 NVIDIA 显卡但未装专有驱动，可执行「pkexec ubuntu-drivers autoinstall」
+      3. Wayland + NVIDIA 专有驱动下 dmabuf 渲染器可能黑屏，可改用 X11 会话（登录界面齿轮选择）
+      4. 狸花猫 GUI 已开启 GPU 合成（WEBKIT_DISABLE_COMPOSITING_MODE=0），动画应更流畅
+      5. 如动画仍卡顿，可安装 Compiz-like 增强：「pkexec apt install gnome-shell-extension-compiz-alike-wayland」
+
+  - name: notify_beauty
+    type: notify
+    condition: "{{target}} in [macos, elementary, 恢复, 还原, 默认]"
+    command: "notify-send '狸花猫' '桌面美化已应用，注销重新登录 + 重启后完全生效'"
+
+  - name: notify_perf
+    type: notify
+    condition: "{{target}} in [performance, 性能, 优化, gpu, GPU, 字体, 动画]"
+    command: "notify-send '狸花猫' '底层优化已应用，注销重新登录生效'"

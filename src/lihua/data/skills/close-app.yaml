@@ -1,0 +1,50 @@
+name: close_app
+description: 关闭应用程序（按名称或窗口）
+version: 0.1
+category: app
+author: lihua
+triggers:
+  - 关闭
+  - 关掉
+  - 退出
+  - 退掉
+  - 杀掉
+  - 结束
+  - 关闭应用
+  - 关掉应用
+  - 退出应用
+  - 结束应用
+  - 关闭程序
+  - 退出程序
+  - 关闭软件
+examples:
+  - 关闭 firefox
+  - 退出 vscode
+  - 关掉 chrome
+parameters:
+  - name: app
+    required: true
+    description: 应用名
+    extract: "(?:关闭|关掉|退出|退掉|杀掉|结束)\\s*(?:应用|程序|软件|app)?\\s*(.+?)\\s*$"
+steps:
+  - name: close_graceful
+    type: command
+    condition: "{{app}} != "
+    description: 优雅关闭（先尝试 SIGTERM）
+    command: "APP='{{app}}' ; PIDS=$(pgrep -fi \"$APP\" 2>/dev/null) ; if [ -z \"$PIDS\" ] ; then echo \"未找到运行中的 $APP\" ; exit 0 ; fi ; echo \"找到进程：$PIDS\" ; for p in $PIDS ; do kill -TERM $p 2>/dev/null ; done ; sleep 2 ; REMAINING=$(pgrep -fi \"$APP\" 2>/dev/null) ; if [ -n \"$REMAINING\" ] ; then echo \"仍有进程未退出：$REMAINING\" ; else echo \"$APP 已关闭\" ; fi"
+    safety: grey
+    confirm: "关闭应用「{{app}}」"
+    timeout: 10
+    on_failure: continue
+  - name: close_force
+    type: command
+    description: 强制关闭（SIGKILL，仅在前一步失败时执行）
+    condition: "{{app}} != "
+    command: "APP='{{app}}' ; PIDS=$(pgrep -fi \"$APP\" 2>/dev/null) ; if [ -z \"$PIDS\" ] ; then echo \"$APP 已退出\" ; exit 0 ; fi ; echo \"强制终止：$PIDS\" ; for p in $PIDS ; do kill -9 $p 2>/dev/null ; done ; sleep 1 ; REMAINING=$(pgrep -fi \"$APP\" 2>/dev/null) ; if [ -n \"$REMAINING\" ] ; then echo \"无法终止：$REMAINING\" ; else echo \"$APP 已强制关闭\" ; fi"
+    safety: grey
+    confirm: "强制关闭应用「{{app}}」（kill -9）"
+    timeout: 10
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '{{app}} 已关闭'"

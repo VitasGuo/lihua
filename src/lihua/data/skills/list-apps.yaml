@@ -1,0 +1,77 @@
+name: list_apps
+description: 列出已安装的应用程序
+version: 0.1
+category: app
+author: lihua
+triggers:
+  - 列出应用
+  - 应用列表
+  - 看应用
+  - 查看应用
+  - 列出软件
+  - 软件列表
+  - 看软件
+  - 查看软件
+  - 列出程序
+  - 程序列表
+  - 看程序
+  - 查看程序
+  - 装了什么
+  - 装了哪些
+  - 有什么应用
+  - 有什么软件
+  - 已安装
+  - installed
+examples:
+  - 列出所有应用
+  - 装了什么软件
+  - 看看已安装的程序
+parameters:
+  - name: source
+    required: false
+    description: 来源（all / apt / flatpak / snap）
+    extract: "(apt|flatpak|snap|所有|全部|all)"
+steps:
+  - name: list_all
+    type: command
+    condition: "{{source}} ==  || {{source}} == 所有 || {{source}} == 全部 || {{source}} == all"
+    description: 列出所有应用（apt + flatpak + snap）
+    command: "echo '=== Flatpak 应用 ===' ; flatpak list --app --columns=application,name 2>/dev/null | head -30 ; echo ; echo '=== Snap 应用 ===' ; snap list 2>/dev/null | head -30 ; echo ; echo '=== apt 显式安装的图形应用 ===' ; apt list --installed 2>/dev/null | grep -iE 'firefox|chrome|chromium|vscode|code|vim|emacs|neovim|git|docker|node|python|java|gcc|make|cmake|gnome-|vlc|spotify|blender|gimp|inkscape|obs|steam|telegram|discord|qq|wechat|dingtalk|feishu|wps|libreoffice|office' | head -30"
+    safety: white
+    timeout: 15
+    on_failure: continue
+  - name: list_flatpak
+    type: command
+    condition: "{{source}} == flatpak"
+    description: 列出 Flatpak 应用
+    command: "echo '=== Flatpak 应用 ===' ; flatpak list --app --columns=application,name,version,size 2>/dev/null"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: list_snap
+    type: command
+    condition: "{{source}} == snap"
+    description: 列出 Snap 应用
+    command: "echo '=== Snap 应用 ===' ; snap list 2>/dev/null"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: list_apt
+    type: command
+    condition: "{{source}} == apt"
+    description: 列出 apt 安装的图形应用
+    command: "echo '=== apt 安装的图形应用 ===' ; ls /usr/share/applications/*.desktop 2>/dev/null | xargs -I{} basename {} .desktop 2>/dev/null | head -50 ; echo ; echo '=== 用户级 ===' ; ls ~/.local/share/applications/*.desktop 2>/dev/null | xargs -I{} basename {} .desktop 2>/dev/null"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: list_desktop
+    type: command
+    condition: "{{source}} ==  || {{source}} == 所有 || {{source}} == 全部"
+    description: 列出应用菜单中的所有应用
+    command: "echo '=== 应用菜单 ===' ; ls /usr/share/applications/*.desktop ~/.local/share/applications/*.desktop 2>/dev/null | xargs -I{} basename {} .desktop 2>/dev/null | sort -u | head -60"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '已列出应用列表'"

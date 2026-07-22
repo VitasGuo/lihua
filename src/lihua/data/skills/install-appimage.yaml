@@ -1,0 +1,65 @@
+name: install_appimage
+description: 安装 AppImage 应用（集成到应用菜单）
+version: 0.1
+category: install
+author: lihua
+triggers:
+  - 装 appimage
+  - 安装 appimage
+  - 装 appimage 应用
+  - appimage 安装
+  - 装 .appimage
+  - 安装 .appimage
+  - 装 appimage 文件
+examples:
+  - 装 appimage ~/Downloads/obs-studio.AppImage
+parameters:
+  - name: appimage_path
+    required: true
+    description: AppImage 文件路径
+    extract: "(/[^\\s]+\\.AppImage|~[^\\s]+\\.AppImage|\\./[^\\s]+\\.AppImage|[^\\s]+\\.AppImage)"
+steps:
+  - name: ensure_dirs
+    type: command
+    description: 创建 AppImage 安装目录
+    command: "mkdir -p ~/Applications ~/Applications/icons ~/.local/share/applications"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: verify_file
+    type: verify
+    description: 检查 AppImage 文件是否存在
+    command: "FILE='{{appimage_path}}' ; FILE=$(eval echo \"$FILE\") ; if [ -f \"$FILE\" ] ; then echo \"找到文件：$FILE\" ; else echo \"文件不存在：$FILE\" ; exit 1 ; fi"
+    on_failure: stop
+  - name: make_executable
+    type: command
+    description: 添加可执行权限
+    command: "FILE='{{appimage_path}}' ; FILE=$(eval echo \"$FILE\") ; chmod +x \"$FILE\""
+    safety: white
+    timeout: 5
+    on_failure: stop
+  - name: move_to_applications
+    type: command
+    description: 移动到 ~/Applications 目录
+    command: "FILE='{{appimage_path}}' ; FILE=$(eval echo \"$FILE\") ; BASENAME=$(basename \"$FILE\") ; cp -v \"$FILE\" ~/Applications/\"$BASENAME\""
+    safety: grey
+    confirm: "将 AppImage 复制到 ~/Applications 目录"
+    timeout: 30
+    on_failure: stop
+  - name: extract_icon
+    type: command
+    description: 尝试提取图标
+    command: "FILE='{{appimage_path}}' ; FILE=$(eval echo \"$FILE\") ; BASENAME=$(basename \"$FILE\" .AppImage) ; cd /tmp && rm -rf squashfs-root 2>/dev/null ; (\"~/Applications/$BASENAME.AppImage\" --appimage-extract '*.desktop' '*.png' 2>/dev/null && DESKTOP=$(find squashfs-root -name '*.desktop' | head -1) && if [ -n \"$DESKTOP\" ] ; then ICON=$(grep -oP '^Icon=\\K.*' \"$DESKTOP\" 2>/dev/null) ; ICONFILE=$(find squashfs-root -name \"${ICON}.png\" -o -name \"${ICON}.svg\" 2>/dev/null | head -1) ; [ -n \"$ICONFILE\" ] && cp \"$ICONFILE\" ~/Applications/icons/\"$BASENAME.png\" ; fi) ; rm -rf /tmp/squashfs-root 2>/dev/null ; echo done"
+    safety: white
+    timeout: 30
+    on_failure: continue
+  - name: create_desktop_entry
+    type: command
+    description: 创建应用菜单项
+    command: "FILE='{{appimage_path}}' ; BASENAME=$(basename \"$(eval echo \"$FILE\")\" .AppImage) ; ICON_PATH='' ; [ -f ~/Applications/icons/$BASENAME.png ] && ICON_PATH=~/Applications/icons/$BASENAME.png ; NAME=$BASENAME ; cat > ~/.local/share/applications/$BASENAME.desktop << EOF\n[Desktop Entry]\nType=Application\nName=$NAME\nExec=$HOME/Applications/$BASENAME.AppImage\nIcon=$ICON_PATH\nTerminal=false\nCategories=Utility;\nEOF\nupdate-desktop-database ~/.local/share/applications 2>/dev/null ; echo '应用菜单已创建'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' 'AppImage 已安装到 ~/Applications'"

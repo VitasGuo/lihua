@@ -1,0 +1,54 @@
+name: file_permission
+description: 修改文件权限（chmod / chown）
+version: 0.1
+category: file
+author: lihua
+triggers:
+  - 改权限
+  - 修改权限
+  - 文件权限
+  - 改文件权限
+  - 权限
+  - chmod
+  - chown
+  - 改属主
+  - 改所有者
+  - 修改属主
+examples:
+  - 改权限 file.txt 755
+  - 修改属主 file.txt root
+parameters:
+  - name: action
+    required: true
+    description: 操作（chmod/chown）
+    extract: "(?:改|修改|更改)\\s*(?:文件)?\\s*权限\\s*$|(?:chmod)\\s*$|(?:改|修改|更改)\\s*(?:文件)?\\s*(?:属主|所有者)\\s*$|(?:chown)\\s*$"
+  - name: file
+    required: true
+    description: 文件路径
+    extract: "(?:chmod|chown|改权限|修改权限|改属主|改所有者|修改属主)\\s+(\\S+)\\s+(\\S+)?"
+  - name: mode
+    required: false
+    description: 权限模式（如 755/644）
+    extract: "(?:chmod)\\s+\\S+\\s+([0-7]{3,4})"
+steps:
+  - name: chmod
+    type: command
+    description: 修改文件权限
+    command: "chmod {{mode}} '{{file}}'"
+    safety: grey
+    confirm: "修改文件 {{file}} 的权限为 {{mode}}"
+    timeout: 10
+    on_failure: stop
+  - name: chown
+    type: command
+    description: 修改文件属主
+    command: "pkexec chown {{owner}} '{{file}}'"
+    safety: grey
+    confirm: "修改文件 {{file}} 的所有者为 {{owner}}"
+    timeout: 10
+    on_failure: continue
+  - name: verify
+    type: verify
+    description: 验证权限
+    command: "stat -c '%a %U:%G %n' '{{file}}'"
+    on_failure: continue

@@ -1,0 +1,67 @@
+name: kernel_management
+description: 内核管理（查看当前 / 已装内核 / 启动菜单 / 清理旧内核）
+version: 0.1
+category: network_sys
+author: lihua
+triggers:
+  - 内核管理
+  - 查看内核
+  - 内核版本
+  - 内核信息
+  - 切换内核
+  - 删除内核
+  - 内核清理
+  - kernel管理
+examples:
+  - 查看内核
+  - 内核版本
+  - 清理旧内核
+parameters:
+  - name: action
+    required: false
+    description: 操作（查看 / 切换 / 删除 / 清理 / 列表）
+    extract: "(查看|切换|删除|清理|列表)"
+steps:
+  - name: current_kernel
+    type: command
+    description: 当前运行的内核
+    command: "echo '=== 当前内核 ===' ; uname -r"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: installed_kernels
+    type: command
+    condition: "{{action}} == 查看 || {{action}} == 列表 || {{action}} == "
+    description: 已安装的内核包
+    command: "echo '=== 已安装的内核 ===' ; dpkg --list | grep -E 'linux-image|linux-headers' | grep '^ii' | awk '{print $2, $3}'"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: boot_menu
+    type: command
+    condition: "{{action}} == 查看 || {{action}} == 列表 || {{action}} == 切换 || {{action}} == "
+    description: GRUB 启动菜单
+    command: "echo '=== GRUB 启动菜单（前 10 项） ===' ; awk -F\\' '/menuentry / {print $2}' /boot/grub/grub.cfg 2>/dev/null | head -10 || echo '未找到 /boot/grub/grub.cfg'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: remove_old_kernels
+    type: command
+    condition: "{{action}} == 删除 || {{action}} == 清理"
+    description: 清理旧内核（保留当前内核）
+    command: "CUR=$(uname -r) ; echo \"当前内核：$CUR，将清理其他旧内核...\" ; pkexec apt autoremove --purge -y linux-image-* linux-headers-* 2>/dev/null ; echo '旧内核清理完成'"
+    safety: grey
+    confirm: "清理旧内核（autoremove --purge，保留当前内核）"
+    timeout: 600
+    on_failure: continue
+  - name: show_after
+    type: command
+    condition: "{{action}} == 删除 || {{action}} == 清理"
+    description: 显示清理后剩余内核
+    command: "echo '=== 清理后剩余内核 ===' ; dpkg --list | grep -E 'linux-image' | grep '^ii' | awk '{print $2, $3}'"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '内核操作完成'"

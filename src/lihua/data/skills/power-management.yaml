@@ -1,0 +1,82 @@
+name: power_management
+description: 电源管理（关机、重启、休眠、待机、锁屏）
+version: 0.1
+category: system
+author: lihua
+triggers:
+  - 关机
+  - 重启
+  - 重新启动
+  - 重启电脑
+  - 关闭电脑
+  - 关闭系统
+  - 重启系统
+  - 休眠
+  - 睡眠
+  - 待机
+  - 挂起
+  - 锁屏
+  - 锁定屏幕
+  - 锁定电脑
+  - shutdown
+  - reboot
+  - poweroff
+  - suspend
+  - hibernate
+  - sleep
+  - lock
+examples:
+  - 关机
+  - 重启
+  - 休眠
+  - 锁屏
+parameters:
+  - name: action
+    required: true
+    description: 电源操作（shutdown/reboot/suspend/hibernate/lock）
+    extract: "(?:关机|关闭电脑|关闭系统|shutdown|poweroff)\\s*$|(?:重启|重新启动|重启电脑|重启系统|reboot)\\s*$|(?:休眠|hibernate)\\s*$|(?:睡眠|待机|挂起|suspend|sleep)\\s*$|(?:锁屏|锁定屏幕|锁定电脑|lock)\\s*$"
+steps:
+  - name: detect_action
+    type: set_var
+    vars:
+      action: "{{action}}"
+    description: 解析操作类型
+  - name: lock_screen
+    type: command
+    condition: "{{action}} == lock"
+    command: "loginctl lock-session"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: shutdown
+    type: command
+    condition: "{{action}} == shutdown"
+    command: "shutdown -h now"
+    safety: grey
+    confirm: "关闭系统（关机）"
+    timeout: 60
+    on_failure: stop
+  - name: reboot
+    type: command
+    condition: "{{action}} == reboot"
+    command: "reboot"
+    safety: grey
+    confirm: "重启系统"
+    timeout: 60
+    on_failure: stop
+  - name: suspend
+    type: command
+    condition: "{{action}} == suspend"
+    command: "systemctl suspend"
+    safety: grey
+    confirm: "让系统睡眠（待机）"
+    timeout: 30
+    on_failure: continue
+  - name: hibernate
+    type: command
+    condition: "{{action}} == hibernate"
+    command: "systemctl hibernate"
+    safety: grey
+    confirm: "让系统休眠（保存到硬盘）"
+    timeout: 60
+    on_failure: continue

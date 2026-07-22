@@ -1,0 +1,97 @@
+name: printer
+description: 打印机管理（查看 / 添加 / 删除 / 设默认 / 测试页）
+version: 0.1
+category: hardware
+author: lihua
+triggers:
+  - 打印机
+  - 打印机列表
+  - 看打印机
+  - 查看打印机
+  - 添加打印机
+  - 装打印机
+  - 删除打印机
+  - 移除打印机
+  - 默认打印机
+  - 设默认打印机
+  - 测试打印
+  - 打印测试页
+  - 打印队列
+  - 看打印队列
+  - 打印任务
+  - cups
+examples:
+  - 查看打印机
+  - 添加打印机
+  - 打印测试页
+parameters:
+  - name: action
+    required: false
+    description: 操作（list / add / remove / default / test / queue）
+    extract: "(查看|看|列表|添加|装|删除|移除|默认|测试|队列|任务)"
+  - name: printer
+    required: false
+    description: 打印机名
+    extract: "(?:添加|装|删除|移除|默认|测试|设默认)\\s*(?:打印机\\s+)?(.+?)\\s*$"
+steps:
+  - name: check_cups
+    type: command
+    description: 检查 CUPS 服务是否运行
+    command: "systemctl is-active cups 2>/dev/null || systemctl is-active cups.service 2>/dev/null || (echo 'CUPS 未运行，尝试启动...' ; pkexec systemctl start cups)"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: list_printers
+    type: command
+    condition: "{{action}} == 查看 || {{action}} == 看 || {{action}} == 列表 || {{action}} ==  && {{printer}} == "
+    description: 列出所有打印机
+    command: "echo '=== 打印机列表 ===' ; lpstat -p 2>/dev/null ; echo '=== 默认打印机 ===' ; lpstat -d 2>/dev/null ; echo '=== 打印队列 ===' ; lpstat -o 2>/dev/null || echo '队列为空'"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: add_printer
+    type: command
+    condition: "{{action}} == 添加 || {{action}} == 装"
+    description: 启动打印机配置工具
+    command: "echo '正在打开打印机配置工具...' ; nohup system-config-printer >/dev/null 2>&1 & disown ; echo '请在图形界面中完成添加'"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: remove_printer
+    type: command
+    condition: "{{action}} == 删除 || {{action}} == 移除"
+    description: 删除打印机
+    command: "lpadmin -x '{{printer}}' && echo '已删除打印机 {{printer}}'"
+    safety: grey
+    confirm: "删除打印机「{{printer}}」"
+    timeout: 10
+    on_failure: continue
+  - name: set_default
+    type: command
+    condition: "{{action}} == 默认 || {{action}} == 设默认"
+    description: 设置默认打印机
+    command: "lpadmin -d '{{printer}}' && echo '已将 {{printer}} 设为默认打印机'"
+    safety: grey
+    confirm: "将「{{printer}}」设为默认打印机"
+    timeout: 10
+    on_failure: continue
+  - name: test_page
+    type: command
+    condition: "{{action}} == 测试"
+    description: 打印测试页
+    command: "PRINTER='{{printer}}' ; if [ -z \"$PRINTER\" ] ; then PRINTER=$(lpstat -d 2>/dev/null | grep -oP 'system default destination: \\K.*' || lpstat -p 2>/dev/null | grep -oP '^printer \\K[^ ]+' | head -1) ; fi ; if [ -z \"$PRINTER\" ] ; then echo '未找到打印机' ; exit 1 ; fi ; lp -d \"$PRINTER\" -t 'Test Page' /usr/share/cups/data/testprint 2>/dev/null || lp -d \"$PRINTER\" -t 'Test Page' /usr/share/ppd/cups-included/HP-DeskJet.ppd 2>/dev/null || echo '已发送测试页到 '$PRINTER"
+    safety: grey
+    confirm: "打印测试页"
+    timeout: 30
+    on_failure: continue
+  - name: show_queue
+    type: command
+    condition: "{{action}} == 队列 || {{action}} == 任务"
+    description: 查看打印队列
+    command: "echo '=== 打印队列 ===' ; lpstat -o 2>/dev/null || echo '队列为空' ; echo '=== 打印机状态 ===' ; lpstat -p"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '打印机操作完成'"

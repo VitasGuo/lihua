@@ -1,0 +1,62 @@
+name: image_convert
+description: 图片格式转换（ImageMagick convert，支持 png/jpg/jpeg/webp/bmp/tiff/gif）
+version: 0.1
+category: file_adv
+author: lihua
+triggers:
+  - 转图片
+  - 图片转换
+  - 转png
+  - 转jpg
+  - 转jpeg
+  - 转webp
+  - 转换图片
+  - 图片格式转换
+  - 缩放图片
+  - 调整图片大小
+examples:
+  - 转png image.jpg
+  - 把 photo.png 转成 webp
+parameters:
+  - name: file
+    required: true
+    description: 源图片路径
+    extract: "(\\S+\\.(?:png|jpg|jpeg|webp|bmp|tiff|gif))\\s*$"
+  - name: format
+    required: false
+    description: 目标格式（png/jpg/jpeg/webp/bmp/tiff/gif，默认 png）
+    extract: "转(?:成|为)?\\s*(png|jpg|jpeg|webp|bmp|tiff|gif)"
+    default: "png"
+steps:
+  - name: check_convert
+    type: command
+    description: 检查 ImageMagick 是否安装
+    command: "which convert"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: check_file
+    type: command
+    description: 检查图片是否存在
+    command: "ls -la '{{file}}'"
+    safety: white
+    timeout: 5
+    on_failure: stop
+  - name: convert
+    type: command
+    description: 用 ImageMagick convert 转换格式
+    command: "F='{{file}}' ; convert \"$F\" \"${F%.*}.{{format|default:png}}\""
+    safety: grey
+    confirm: "将 {{file}} 转换为 {{format|default:png}}"
+    timeout: 60
+    on_failure: stop
+  - name: show_result
+    type: command
+    description: 显示转换后的图片
+    command: "F='{{file}}' ; ls -la \"${F%.*}.{{format|default:png}}\""
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '图片转换完成：{{file}} → {{format|default:png}}'"

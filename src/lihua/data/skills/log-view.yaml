@@ -1,0 +1,79 @@
+name: log_view
+description: 日志查看（系统 / 内核 / 启动 / 服务 / 应用 / 错误日志，基于 journalctl + dmesg）
+version: 0.1
+category: network_sys
+author: lihua
+triggers:
+  - 查看日志
+  - 日志
+  - 系统日志
+  - 看日志
+  - journal日志
+  - syslog
+  - 内核日志
+  - 应用日志
+  - 日志查看
+examples:
+  - 查看日志
+  - 系统日志
+  - 看 nginx 服务日志
+parameters:
+  - name: scope
+    required: false
+    description: 范围（系统 / 内核 / 应用 / 服务 / 启动）
+    extract: "(系统|内核|应用|服务|启动)"
+  - name: service
+    required: false
+    description: 服务名或应用名
+    extract: "(?:服务|应用)\\s+(.+?)\\s*(?:的)?\\s*(?:日志)?$"
+steps:
+  - name: system_log
+    type: command
+    condition: "{{scope}} == 系统 || {{scope}} == "
+    description: 系统日志（最近 50 条）
+    command: "echo '=== 系统日志（最近 50 条） ===' ; journalctl -n 50 --no-pager"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: kernel_log
+    type: command
+    condition: "{{scope}} == 内核"
+    description: 内核日志（dmesg 最近 50 条）
+    command: "echo '=== 内核日志（最近 50 条） ===' ; dmesg 2>/dev/null | tail -50 || pkexec dmesg | tail -50"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: boot_log
+    type: command
+    condition: "{{scope}} == 启动"
+    description: 本次启动日志（最近 50 条）
+    command: "echo '=== 本次启动日志（最近 50 条） ===' ; journalctl -b --no-pager | tail -50"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: service_log
+    type: command
+    condition: "{{scope}} == 服务 && {{service}} != "
+    description: 指定服务的日志
+    command: "echo '=== 服务 {{service}} 日志（最近 50 条） ===' ; journalctl -u '{{service}}' -n 50 --no-pager"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: app_log
+    type: command
+    condition: "{{scope}} == 应用 && {{service}} != "
+    description: 指定应用的日志
+    command: "echo '=== 应用 {{service}} 日志（最近 50 条） ===' ; journalctl -t '{{service}}' -n 50 --no-pager"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: error_log
+    type: command
+    description: 错误级别日志（最近 30 条）
+    command: "echo '=== 错误日志（最近 30 条） ===' ; journalctl -p err -n 30 --no-pager"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '日志查看完成'"

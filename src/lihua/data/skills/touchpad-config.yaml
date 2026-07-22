@@ -1,0 +1,70 @@
+name: touchpad_config
+description: 触摸板配置（开关 / 启用 / 禁用 / 轻触点击）
+version: 0.1
+category: desktop_hw
+author: lihua
+triggers:
+  - 触摸板
+  - 触控板
+  - 触摸板设置
+  - 触控板设置
+  - 触摸板开关
+  - 关闭触摸板
+  - 打开触摸板
+  - 触摸板点击
+  - 触摸板滚动
+examples:
+  - 关闭触摸板
+  - 启用触摸板点击
+parameters:
+  - name: action
+    required: false
+    description: 操作（打开 / 关闭 / 启用 / 禁用 / 查看 / 点击 / 滚动）
+    extract: "(打开|关闭|启用|禁用|查看|点击|滚动)"
+steps:
+  - name: show_tap
+    type: command
+    condition: "{{action}} == 查看 || {{action}} == "
+    description: 查看触摸板轻触点击状态
+    command: "echo '=== 触摸板轻触点击 ===' ; gsettings get org.gnome.desktop.peripherals.touchpad tap-to-click 2>/dev/null || echo 'gsettings 不可用'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: show_events
+    type: command
+    condition: "{{action}} == 查看 || {{action}} == "
+    description: 查看触摸板启用状态
+    command: "echo '=== 触摸板状态 ===' ; gsettings get org.gnome.desktop.peripherals.touchpad send-events 2>/dev/null || echo 'gsettings 不可用'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: enable_tap
+    type: command
+    condition: "{{action}} == 点击 || {{action}} == 启用"
+    description: 启用触摸板轻触点击
+    command: "gsettings set org.gnome.desktop.peripherals.touchpad tap-to-click true 2>/dev/null && echo '已启用触摸板轻触点击'"
+    safety: grey
+    confirm: "启用触摸板轻触点击"
+    timeout: 5
+    on_failure: continue
+  - name: disable_touchpad
+    type: command
+    condition: "{{action}} == 关闭 || {{action}} == 禁用"
+    description: 禁用触摸板
+    command: "gsettings set org.gnome.desktop.peripherals.touchpad send-events disabled 2>/dev/null && echo '已禁用触摸板'"
+    safety: grey
+    confirm: "禁用触摸板"
+    timeout: 5
+    on_failure: continue
+  - name: enable_touchpad
+    type: command
+    condition: "{{action}} == 打开 || {{action}} == 启用"
+    description: 启用触摸板
+    command: "gsettings set org.gnome.desktop.peripherals.touchpad send-events enabled 2>/dev/null && echo '已启用触摸板'"
+    safety: grey
+    confirm: "启用触摸板"
+    timeout: 5
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '触摸板设置已更新'"

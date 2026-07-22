@@ -1,0 +1,66 @@
+name: video_convert
+description: 视频格式转换（基于 ffmpeg，支持 mp4/mkv/avi/mov/webm/flv/wmv）
+version: 0.1
+category: media_dev
+author: lihua
+triggers:
+  - 转视频
+  - 视频转换
+  - 转mp4
+  - 转mkv
+  - 转avi
+  - 转mov
+  - 转webm
+  - 转换视频
+  - 视频格式转换
+  - 转换mp4
+  - ffmpeg转换
+  - 视频转码
+examples:
+  - 转mp4 video.avi
+  - 视频转换 video.mkv 转webm
+parameters:
+  - name: file
+    required: false
+    description: 源视频文件路径
+    extract: "(?:转|转换).*?视频?.*?(.+?\\.(?:mp4|mkv|avi|mov|webm|flv|wmv))"
+  - name: format
+    required: false
+    description: 目标格式（mp4/mkv/avi/mov/webm/flv/wmv）
+    extract: "转(?:成|为)?\\s*(mp4|mkv|avi|mov|webm|flv|wmv)"
+steps:
+  - name: check_ffmpeg
+    type: command
+    description: 检查 ffmpeg 是否安装
+    command: "which ffmpeg"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: check_file
+    type: command
+    condition: "{{file}} != "
+    description: 检查源视频文件
+    command: "ls -la '{{file}}'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: convert
+    type: command
+    condition: "{{file}} != "
+    description: 转换视频格式
+    command: "ffmpeg -i '{{file}}' -c:v libx264 -c:a aac '{{file%.*}}.{{format|default:mp4}}'"
+    safety: grey
+    confirm: "转换视频 {{file}} 为 {{format|default:mp4}}"
+    timeout: 1800
+    on_failure: continue
+  - name: show_result
+    type: command
+    condition: "{{file}} != "
+    description: 显示转换后的文件
+    command: "ls -la '{{file%.*}}.{{format|default:mp4}}'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '视频转换完成：{{file}} → {{format|default:mp4}}'"

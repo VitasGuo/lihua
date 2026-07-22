@@ -1,0 +1,110 @@
+name: bluetooth
+description: 蓝牙设备管理（查看/连接/断开/配对/信任/移除）
+version: 0.1
+category: hardware
+author: lihua
+triggers:
+  - 蓝牙
+  - bluetooth
+  - 蓝牙设备
+  - 看蓝牙
+  - 查看蓝牙
+  - 蓝牙列表
+  - 连接蓝牙
+  - 配对蓝牙
+  - 断开蓝牙
+  - 信任蓝牙
+  - 移除蓝牙
+  - 蓝牙开关
+  - 开蓝牙
+  - 关蓝牙
+  - 打开蓝牙
+  - 关闭蓝牙
+examples:
+  - 查看蓝牙
+  - 连接蓝牙耳机
+  - 打开蓝牙
+parameters:
+  - name: action
+    required: false
+    description: 操作（list / connect / disconnect / pair / trust / remove / on / off）
+    extract: "(查看|看|列表|连接|配对|断开|信任|移除|开|打开|关|关闭|开关)"
+  - name: device
+    required: false
+    description: 设备名或 MAC 地址
+    extract: "(?:连接|配对|断开|信任|移除)\\s+(?:蓝牙\\s+)?(.+?)\\s*$"
+steps:
+  - name: list_devices
+    type: command
+    condition: "{{action}} == 查看 || {{action}} == 看 || {{action}} == 列表 || {{action}} ==  && {{device}} == "
+    description: 列出所有蓝牙设备
+    command: "echo '=== 蓝牙状态 ===' ; bluetoothctl show 2>/dev/null | head -10 ; echo '=== 已配对设备 ===' ; bluetoothctl devices Paired 2>/dev/null ; echo '=== 已连接设备 ===' ; bluetoothctl devices Connected 2>/dev/null"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: bt_on
+    type: command
+    condition: "{{action}} == 开 || {{action}} == 打开"
+    description: 打开蓝牙
+    command: "bluetoothctl power on && bluetoothctl discoverable on"
+    safety: grey
+    confirm: "打开蓝牙并设为可发现"
+    timeout: 10
+    on_failure: stop
+  - name: bt_off
+    type: command
+    condition: "{{action}} == 关 || {{action}} == 关闭"
+    description: 关闭蓝牙
+    command: "bluetoothctl power off"
+    safety: grey
+    confirm: "关闭蓝牙"
+    timeout: 10
+    on_failure: stop
+  - name: connect_device
+    type: command
+    condition: "{{action}} == 连接 && {{device}} != "
+    description: 连接蓝牙设备
+    command: "MAC=$(bluetoothctl devices | grep -i '{{device}}' | awk '{print $2}' | head -1) ; if [ -z \"$MAC\" ] ; then echo '未找到设备 {{device}}' ; exit 1 ; fi ; bluetoothctl connect $MAC"
+    safety: grey
+    confirm: "连接蓝牙设备「{{device}}」"
+    timeout: 30
+    on_failure: continue
+  - name: pair_device
+    type: command
+    condition: "{{action}} == 配对 && {{device}} != "
+    description: 配对蓝牙设备
+    command: "MAC=$(bluetoothctl devices | grep -i '{{device}}' | awk '{print $2}' | head -1) ; if [ -z \"$MAC\" ] ; then echo '未找到设备 {{device}}，先扫描...' ; bluetoothctl scan on ; sleep 5 ; bluetoothctl scan off ; MAC=$(bluetoothctl devices | grep -i '{{device}}' | awk '{print $2}' | head -1) ; fi ; if [ -z \"$MAC\" ] ; then echo '仍未找到设备' ; exit 1 ; fi ; bluetoothctl pair $MAC && bluetoothctl trust $MAC"
+    safety: grey
+    confirm: "配对蓝牙设备「{{device}}」"
+    timeout: 60
+    on_failure: continue
+  - name: disconnect_device
+    type: command
+    condition: "{{action}} == 断开 && {{device}} != "
+    description: 断开蓝牙设备
+    command: "MAC=$(bluetoothctl devices Connected | grep -i '{{device}}' | awk '{print $2}' | head -1) ; if [ -z \"$MAC\" ] ; then echo '设备 {{device}} 未连接' ; exit 0 ; fi ; bluetoothctl disconnect $MAC"
+    safety: grey
+    confirm: "断开蓝牙设备「{{device}}」"
+    timeout: 15
+    on_failure: continue
+  - name: trust_device
+    type: command
+    condition: "{{action}} == 信任 && {{device}} != "
+    description: 信任蓝牙设备
+    command: "MAC=$(bluetoothctl devices | grep -i '{{device}}' | awk '{print $2}' | head -1) ; if [ -z \"$MAC\" ] ; then echo '未找到设备 {{device}}' ; exit 1 ; fi ; bluetoothctl trust $MAC"
+    safety: grey
+    confirm: "信任蓝牙设备「{{device}}」"
+    timeout: 10
+    on_failure: continue
+  - name: remove_device
+    type: command
+    condition: "{{action}} == 移除 && {{device}} != "
+    description: 移除蓝牙设备
+    command: "MAC=$(bluetoothctl devices | grep -i '{{device}}' | awk '{print $2}' | head -1) ; if [ -z \"$MAC\" ] ; then echo '未找到设备 {{device}}' ; exit 1 ; fi ; bluetoothctl remove $MAC"
+    safety: grey
+    confirm: "移除蓝牙设备「{{device}}」（需重新配对才能连接）"
+    timeout: 10
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '蓝牙操作完成'"

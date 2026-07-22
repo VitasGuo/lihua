@@ -1,0 +1,103 @@
+name: install_font
+description: 安装字体（用户目录 ~/.local/share/fonts 优先）
+version: 0.1
+category: mvp
+author: lihua
+triggers:
+  - 装字体
+  - 安装字体
+  - 装个字体
+  - 装一下字体
+  - 安装个字体
+  - install font
+  - 装
+  - 安装
+examples:
+  - 装个思源黑体
+  - 安装 LXGW Bright 字体
+  - 装霞鹜文楷
+parameters:
+  - name: target
+    required: true
+    description: 字体名
+    extract: "(?:装|安装|安一个|安一下|安装一个|装一个|装个|安装个|装一下|安装一下)\\s*(?:个|一个)?\\s*(?:字体)?\\s*(.+)"
+# 字体别名：中文名 → apt 包名 / 下载链接
+# 优先用 apt 安装，无 apt 包的回退到用户目录下载安装
+aliases:
+  思源黑体: ["fonts-noto-cjk"]
+  思源宋体: ["fonts-noto-cjk"]
+  思源等宽: ["fonts-noto-cjk"]
+  noto sans cjk: ["fonts-noto-cjk"]
+  noto serif cjk: ["fonts-noto-cjk"]
+  noto mono cjk: ["fonts-noto-cjk"]
+  noto cjk: ["fonts-noto-cjk"]
+  霞鹜文楷: ["fonts-lxgw-wenkai"]
+  lxgw wenkai: ["fonts-lxgw-wenkai"]
+  lxgw bright: ["fonts-lxgw-bright"]
+  更纱黑体: ["fonts-sarasa-gothic"]
+  sarasa gothic: ["fonts-sarasa-gothic"]
+  sarasa: ["fonts-sarasa-gothic"]
+  方正筑紫: ["fonts-fz-hanSans"]
+  文泉驿: ["fonts-wqy-zenhei", "fonts-wqy-microhei"]
+  文泉驿正黑: ["fonts-wqy-zenhei"]
+  文泉驿微米黑: ["fonts-wqy-microhei"]
+  wqy: ["fonts-wqy-zenhei", "fonts-wqy-microhei"]
+  wqy zenhei: ["fonts-wqy-zenhei"]
+  wqy microhei: ["fonts-wqy-microhei"]
+  adobe source han sans: ["fonts-noto-cjk"]
+  source han sans: ["fonts-noto-cjk"]
+  source han serif: ["fonts-noto-cjk"]
+  source han mono: ["fonts-noto-cjk"]
+  source code pro: ["fonts-source-code-pro"]
+  fira code: ["fonts-firacode"]
+  firacode: ["fonts-firacode"]
+  jetbrains mono: ["fonts-jetbrains-mono"]
+  jetbrainsmono: ["fonts-jetbrains-mono"]
+  ubuntu mono: ["fonts-ubuntu-mono"]
+  roboto: ["fonts-roboto"]
+  roboto mono: ["fonts-roboto-mono"]
+  cascadia code: ["fonts-cascadia-code"]
+  cascadiacode: ["fonts-cascadia-code"]
+  inter: ["fonts-inter"]
+  hack: ["fonts-hack-ttf"]
+  dejavu: ["fonts-dejavu-core", "fonts-dejavu-extra"]
+  dejavu sans: ["fonts-dejavu-core"]
+  dejavu sans mono: ["fonts-dejavu-extra"]
+  liberation: ["fonts-liberation"]
+  liberation sans: ["fonts-liberation"]
+  liberation mono: ["fonts-liberation-mono"]
+  inconsolata: ["fonts-inconsolata"]
+  symbola: ["fonts-symbola"]
+  font awesome: ["fonts-font-awesome"]
+  fontawesome: ["fonts-font-awesome"]
+  powerline: ["fonts-powerline"]
+  nerdfont: ["fonts-nerd-font"]
+  nerd fonts: ["fonts-nerd-font"]
+  ubuntu: ["fonts-ubuntu"]
+steps:
+  - name: resolve
+    type: resolve_package
+    description: 解析字体包名
+    prefer: [apt]
+  - name: install_apt
+    type: command
+    condition: "{{package_type}} == apt"
+    command: "pkexec apt install -y {{package}}"
+    safety: grey
+    confirm: "安装字体 {{target}}（{{package}}，需要管理员权限）"
+    timeout: 300
+    on_failure: stop
+  - name: refresh_cache
+    type: command
+    description: 刷新字体缓存（traps T002/T003：fontconfig 注意事项）
+    command: "fc-cache -fv"
+    safety: white
+    on_failure: continue
+  - name: verify
+    type: verify
+    description: 验证字体已安装
+    command: "fc-list | grep -i '{{target}}' || fc-list | grep -i '{{package}}'"
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '字体 {{target}} 已安装（刷新字体缓存完成）'"

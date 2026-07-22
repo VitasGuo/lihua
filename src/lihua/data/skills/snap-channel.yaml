@@ -1,0 +1,68 @@
+name: snap_channel
+description: Snap 应用通道管理（查看/切换 stable/candidate/beta/edge 通道）
+version: 0.1
+category: mirror
+author: lihua
+triggers:
+  - snap channel
+  - snap通道
+  - snap源
+  - 切换snap
+  - snap版本
+  - 查看snap源
+examples:
+  - 切换 snap firefox 通道 beta
+  - 查看 snap 通道
+  - snap list
+parameters:
+  - name: app
+    required: false
+    description: Snap 应用名
+    extract: "(?:切换|查看|换)\\s+(?:snap\\s+)?(?:通道\\s+)?(.+?)\\s*$"
+  - name: channel
+    required: false
+    description: 通道（stable/candidate/beta/edge/latest）
+    extract: "(?:通道|channel)\\s+(stable|candidate|beta|edge|latest)"
+steps:
+  - name: check_snap
+    type: verify
+    description: 检查 snap 是否可用
+    command: "which snap && snap version | head -3"
+    on_failure: stop
+  - name: list_installed
+    type: command
+    condition: "{{app}} == "
+    description: 列出已安装的 snap 应用
+    command: "echo '=== 已安装 Snap 应用 ===' ; snap list 2>/dev/null"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: show_channels
+    type: command
+    condition: "{{app}} != "
+    description: 显示 snap 应用可用通道
+    command: "echo '=== {{app}} 通道信息 ===' ; snap info {{app}} 2>/dev/null | head -40"
+    safety: white
+    timeout: 15
+    on_failure: continue
+  - name: switch_channel
+    type: command
+    condition: "{{app}} !=  && {{channel}} != "
+    description: 切换 snap 应用通道
+    command: "pkexec snap switch {{app}} --channel={{channel}} && pkexec snap refresh {{app}}"
+    safety: grey
+    confirm: "切换 Snap 应用「{{app}}」到 {{channel}} 通道并刷新"
+    timeout: 300
+    on_failure: stop
+  - name: refresh_app
+    type: command
+    condition: "{{app}} !=  && {{channel}} == "
+    description: 刷新 snap 应用（不改通道）
+    command: "pkexec snap refresh {{app}}"
+    safety: grey
+    confirm: "刷新 Snap 应用「{{app}}」"
+    timeout: 300
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' 'Snap 通道操作完成'"

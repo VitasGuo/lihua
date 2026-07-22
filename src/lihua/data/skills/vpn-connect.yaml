@@ -1,0 +1,79 @@
+name: vpn_connect
+description: VPN 连接管理（OpenVPN / WireGuard，连接 / 断开 / 查看状态）
+version: 0.1
+category: network_sys
+author: lihua
+triggers:
+  - 连vpn
+  - 连VPN
+  - 连接vpn
+  - 连接VPN
+  - vpn连接
+  - 断开vpn
+  - 断开VPN
+  - vpn断开
+  - 查看vpn
+  - 查看VPN
+  - vpn状态
+  - openvpn
+  - wireguard
+  - wg连接
+examples:
+  - 连vpn client.conf
+  - 查看vpn
+  - 断开vpn
+parameters:
+  - name: action
+    required: false
+    description: 操作（连接 / 连 / 断开 / 查看 / 状态）
+    extract: "(连接|连|断开|查看|状态)"
+  - name: config
+    required: false
+    description: 配置文件路径（.conf）
+    extract: "(?:连接|连)\\s*(?:vpn\\s+|VPN\\s+)?(.+?\\.conf)"
+steps:
+  - name: check_tools
+    type: command
+    description: 检查 VPN 工具是否安装
+    command: "echo '=== VPN 工具检测 ===' ; for cmd in openvpn wg wg-quick ; do if command -v $cmd > /dev/null 2>&1 ; then echo \"✓ $cmd ($(which $cmd))\" ; else echo \"✗ $cmd 未安装\" ; fi ; done"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: show_status
+    type: command
+    condition: "{{action}} == 查看 || {{action}} == 状态 || {{action}} == "
+    description: 查看 VPN 连接状态
+    command: "echo '=== WireGuard 状态 ===' ; wg show 2>/dev/null || echo 'wg 未运行或未安装' ; echo ; echo '=== tun/wg 网络接口 ===' ; ip link show | grep -E 'tun|wg' || echo '无 VPN 接口' ; echo ; echo '=== OpenVPN 进程 ===' ; pgrep -a openvpn 2>/dev/null || echo '无 openvpn 进程'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: connect_openvpn
+    type: command
+    condition: "{{action}} == 连接 || {{action}} == 连"
+    description: 通过 OpenVPN 连接（后台守护进程）
+    command: "if [ -z '{{config}}' ] ; then echo '未指定配置文件，用法：连vpn xxx.conf' ; exit 1 ; fi ; if ! command -v openvpn > /dev/null 2>&1 ; then echo 'openvpn 未安装，请先安装：pkexec apt install openvpn' ; exit 1 ; fi ; pkexec openvpn --config '{{config}}' --daemon && echo 'OpenVPN 已后台启动（配置 {{config}}）'"
+    safety: grey
+    confirm: "通过 OpenVPN 连接（配置 {{config}}）"
+    timeout: 30
+    on_failure: continue
+  - name: connect_wireguard
+    type: command
+    condition: "{{action}} == 连接 || {{action}} == 连"
+    description: 通过 WireGuard 连接
+    command: "if ! command -v wg-quick > /dev/null 2>&1 ; then echo 'wg-quick 未安装，请先安装：pkexec apt install wireguard-tools' ; exit 1 ; fi ; pkexec wg-quick up {{config|default:wg0}} && echo 'WireGuard 已连接 {{config|default:wg0}}'"
+    safety: grey
+    confirm: "通过 WireGuard 连接 {{config|default:wg0}}"
+    timeout: 30
+    on_failure: continue
+  - name: disconnect
+    type: command
+    condition: "{{action}} == 断开"
+    description: 断开 VPN（WireGuard + OpenVPN）
+    command: "pkexec wg-quick down {{config|default:wg0}} 2>/dev/null ; pkexec pkill openvpn 2>/dev/null ; echo 'VPN 已断开'"
+    safety: grey
+    confirm: "断开 VPN（关闭 WireGuard 和 OpenVPN）"
+    timeout: 15
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' 'VPN 操作完成'"

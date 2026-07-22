@@ -1,0 +1,92 @@
+name: gpu_driver
+description: 显卡驱动管理（查看 GPU / 安装驱动 / 切换 PRIME）
+version: 0.1
+category: desktop_hw
+author: lihua
+triggers:
+  - 显卡驱动
+  - gpu驱动
+  - 显卡
+  - gpu
+  - nvidia驱动
+  - amd驱动
+  - intel驱动
+  - 查看显卡
+  - 显卡信息
+  - 切换显卡
+  - 驱动管理
+examples:
+  - 查看显卡
+  - 安装nvidia驱动
+  - 切换显卡 nvidia
+parameters:
+  - name: action
+    required: false
+    description: 操作（查看 / 安装 / 切换 / 列表）
+    extract: "(查看|安装|切换|列表)"
+  - name: vendor
+    required: false
+    description: 厂商（nvidia / amd / intel / 英伟达）
+    extract: "(nvidia|amd|intel|英伟达)"
+steps:
+  - name: show_gpu
+    type: command
+    condition: "{{action}} == 查看 || {{action}} == "
+    description: 查看 GPU 硬件
+    command: "echo '=== GPU 设备 ===' ; lspci | grep -iE 'vga|3d|display' || echo '未检测到 GPU'"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: show_driver
+    type: command
+    condition: "{{action}} == 查看 || {{action}} == "
+    description: 查看 GPU 驱动
+    command: "echo '=== GPU 驱动 ===' ; lspci -k | grep -A3 -iE 'vga|3d' || echo '未检测到 GPU 驱动信息'"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: show_loaded
+    type: command
+    condition: "{{action}} == 查看 || {{action}} == "
+    description: 查看已加载的 GPU 内核模块
+    command: "echo '=== 已加载的 GPU 模块 ===' ; lsmod | grep -E 'nvidia|amdgpu|i915|radeon' || echo '未检测到已加载的 GPU 驱动模块'"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: list_drivers
+    type: command
+    condition: "{{action}} == 列表 || {{action}} == 查看 || {{action}} == "
+    description: 列出 Ubuntu 推荐驱动
+    command: "echo '=== 可用驱动列表 ===' ; ubuntu-drivers list 2>/dev/null || echo 'ubuntu-drivers 不可用（仅 Ubuntu/Debian 系）'"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: recommend_drivers
+    type: command
+    condition: "{{action}} == 列表 || {{action}} == 查看 || {{action}} == "
+    description: 显示推荐驱动
+    command: "echo '=== 推荐驱动 ===' ; ubuntu-drivers devices 2>/dev/null || echo 'ubuntu-drivers 不可用'"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: install_nvidia
+    type: command
+    condition: "{{action}} == 安装 && ({{vendor}} == nvidia || {{vendor}} == 英伟达 || {{vendor}} == )"
+    description: 安装推荐的 NVIDIA 驱动
+    command: "pkexec ubuntu-drivers autoinstall"
+    safety: grey
+    confirm: "安装推荐显卡驱动（需重启生效）"
+    timeout: 600
+    on_failure: continue
+  - name: switch_prime
+    type: command
+    condition: "{{action}} == 切换"
+    description: 切换 PRIME 显卡模式
+    command: "pkexec prime-select {{vendor|default:intel}}"
+    safety: grey
+    confirm: "切换显卡到 {{vendor|default:intel}}（需注销重新登录生效）"
+    timeout: 30
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '显卡驱动操作完成'"

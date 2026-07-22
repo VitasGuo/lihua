@@ -1,0 +1,69 @@
+name: ssh_key
+description: SSH 密钥管理（生成 / 查看 / 拷贝到远程主机）
+version: 0.1
+category: media_dev
+author: lihua
+triggers:
+  - 生成ssh密钥
+  - ssh密钥
+  - 生成ssh key
+  - ssh key
+  - 创建ssh密钥
+  - 查看ssh密钥
+  - ssh公钥
+  - ssh私钥
+  - 拷贝ssh密钥
+examples:
+  - 生成ssh密钥
+  - 查看ssh密钥
+parameters:
+  - name: action
+    required: false
+    description: 操作（生成 / 创建 / 查看 / 拷贝 / 复制）
+    extract: "(生成|创建|查看|拷贝|复制)"
+  - name: target
+    required: false
+    description: 目标主机（user@host）
+    extract: "(?:拷贝|复制).*?(?:到|to)\\s+(\\S+)"
+  - name: email
+    required: false
+    description: 邮箱（用于密钥注释）
+    extract: "(\\S+@\\S+)"
+steps:
+  - name: list_keys
+    type: command
+    condition: "{{action}} == 查看 || {{action}} == "
+    description: 查看已有的 SSH 密钥
+    command: "echo '=== ~/.ssh/ 目录 ===' ; ls -la ~/.ssh/ 2>/dev/null || echo '（~/.ssh/ 不存在）'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: gen_key
+    type: command
+    condition: "{{action}} == 生成 || {{action}} == 创建"
+    description: 生成 ed25519 SSH 密钥
+    command: "ssh-keygen -t ed25519 -C '{{email|default:user@lihua}}' -f ~/.ssh/id_ed25519 -N '' && echo '密钥已生成：~/.ssh/id_ed25519'"
+    safety: grey
+    confirm: "生成 SSH 密钥（邮箱 {{email|default:user@lihua}}）"
+    timeout: 15
+    on_failure: continue
+  - name: show_pubkey
+    type: command
+    condition: "{{action}} == 生成 || {{action}} == 创建"
+    description: 显示公钥
+    command: "cat ~/.ssh/id_ed25519.pub"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: copy_to_host
+    type: command
+    condition: "{{action}} == 拷贝 && {{target}} != "
+    description: 拷贝公钥到远程主机
+    command: "ssh-copy-id {{target}}"
+    safety: grey
+    confirm: "拷贝 SSH 公钥到 {{target}}"
+    timeout: 60
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' 'SSH 密钥操作完成'"

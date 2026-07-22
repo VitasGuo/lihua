@@ -1,0 +1,106 @@
+name: hardware_info
+description: 查看硬件信息（CPU/内存/磁盘/GPU/网卡/USB/PCI）
+version: 0.1
+category: hardware
+author: lihua
+triggers:
+  - 硬件信息
+  - 硬件配置
+  - 配置信息
+  - 电脑配置
+  - 看硬件
+  - 查看硬件
+  - cpu 信息
+  - cpu信息
+  - 看 cpu
+  - 内存信息
+  - 磁盘信息
+  - gpu 信息
+  - 显卡信息
+  - 看显卡
+  - 网卡信息
+  - 看网卡
+  - usb 设备
+  - pci 设备
+  - 主板信息
+  - 看主板
+  - 序列号
+  - 设备信息
+examples:
+  - 看硬件配置
+  - 看 CPU
+  - 看内存
+  - 看显卡
+parameters:
+  - name: component
+    required: false
+    description: 硬件组件（cpu / memory / disk / gpu / network / usb / pci / board / all）
+    extract: "(cpu|CPU|内存|memory|磁盘|disk|硬盘|gpu|GPU|显卡|网卡|网络|network|usb|USB|pci|PCI|主板|board|序列号|serial)"
+steps:
+  - name: cpu_info
+    type: command
+    condition: "{{component}} ==  || {{component}} == cpu || {{component}} == CPU || {{component}} == all"
+    description: 查看 CPU 信息
+    command: "echo '=== CPU ===' ; lscpu | grep -E '^(Model name|Architecture|CPU\\(s\\)|Thread|Core|Socket|MHz|Vendor)' ; echo"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: memory_info
+    type: command
+    condition: "{{component}} ==  || {{component}} == 内存 || {{component}} == memory || {{component}} == all"
+    description: 查看内存信息
+    command: "echo '=== 内存 ===' ; free -h ; echo ; echo '=== 内存条 ===' ; pkexec dmidecode -t memory 2>/dev/null | grep -E 'Size:|Type:|Speed:|Manufacturer:' | grep -v 'No Module' || cat /proc/meminfo | head -5 ; echo"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: disk_info
+    type: command
+    condition: "{{component}} ==  || {{component}} == 磁盘 || {{component}} == disk || {{component}} == 硬盘 || {{component}} == all"
+    description: 查看磁盘信息
+    command: "echo '=== 磁盘 ===' ; lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINT,MODEL ; echo ; echo '=== 磁盘使用 ===' ; df -h | grep -v tmpfs ; echo"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: gpu_info
+    type: command
+    condition: "{{component}} ==  || {{component}} == gpu || {{component}} == GPU || {{component}} == 显卡 || {{component}} == all"
+    description: 查看 GPU 信息
+    command: "echo '=== GPU ===' ; lspci | grep -iE 'vga|3d|display' ; echo ; (nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv 2>/dev/null || true) ; echo"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: network_info
+    type: command
+    condition: "{{component}} ==  || {{component}} == 网卡 || {{component}} == 网络 || {{component}} == network || {{component}} == all"
+    description: 查看网卡信息
+    command: "echo '=== 网卡 ===' ; ip -br link ; echo ; echo '=== PCI 网卡 ===' ; lspci | grep -i net ; echo"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: usb_info
+    type: command
+    condition: "{{component}} ==  || {{component}} == usb || {{component}} == USB || {{component}} == all"
+    description: 查看 USB 设备
+    command: "echo '=== USB ===' ; lsusb ; echo"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: board_info
+    type: command
+    condition: "{{component}} ==  || {{component}} == 主板 || {{component}} == board || {{component}} == all"
+    description: 查看主板和系统信息
+    command: "echo '=== 主板 / BIOS ===' ; pkexec dmidecode -t baseboard 2>/dev/null | grep -E 'Manufacturer:|Product Name:|Serial Number:' || true ; pkexec dmidecode -t bios 2>/dev/null | grep -E 'Vendor:|Version:|Release Date:' || true ; echo ; echo '=== 系统 ===' ; hostnamectl ; echo"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: serial_info
+    type: command
+    condition: "{{component}} == 序列号 || {{component}} == serial"
+    description: 查看设备序列号
+    command: "echo '=== 序列号 ===' ; pkexec dmidecode -s system-serial-number 2>/dev/null ; pkexec dmidecode -s system-uuid 2>/dev/null ; echo"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '硬件信息查看完成'"

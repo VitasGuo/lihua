@@ -1,0 +1,78 @@
+name: firewall
+description: 防火墙管理（ufw 启用/禁用/放行端口）
+version: 0.1
+category: network
+author: lihua
+triggers:
+  - 防火墙
+  - ufw
+  - 防火墙状态
+  - 开启防火墙
+  - 关闭防火墙
+  - 放行端口
+  - 开端口
+  - 开放端口
+  - 关端口
+  - 关闭端口
+  - firewall
+examples:
+  - 查看防火墙
+  - 开启防火墙
+  - 放行 8080 端口
+parameters:
+  - name: action
+    required: true
+    description: 操作（status/enable/disable/allow/deny）
+    extract: "(?:查看|看下|查下)?\\s*(?:防火墙|ufw|firewall)\\s*$|(?:开启|启用|enable)\\s*(?:防火墙|ufw)?\\s*$|(?:关闭|禁用|disable)\\s*(?:防火墙|ufw)?\\s*$|(?:放行|开放|开|allow)\\s+(\\d+)\\s*(?:端口)?\\s*$|(?:关闭|禁止|deny)\\s+(\\d+)\\s*(?:端口)?\\s*$"
+  - name: port
+    required: false
+    description: 端口号
+    extract: "(?:放行|开放|开|allow|关闭|禁止|deny)\\s+(\\d+)"
+steps:
+  - name: status
+    type: command
+    condition: "{{action}} == status"
+    description: 防火墙状态
+    command: "pkexec ufw status verbose"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: enable
+    type: command
+    condition: "{{action}} == enable"
+    description: 启用防火墙
+    command: "pkexec ufw --force enable"
+    safety: grey
+    confirm: "启用防火墙（ufw enable）"
+    timeout: 30
+    on_failure: stop
+  - name: disable
+    type: command
+    condition: "{{action}} == disable"
+    description: 禁用防火墙
+    command: "pkexec ufw --force disable"
+    safety: grey
+    confirm: "禁用防火墙（ufw disable，会让所有端口都暴露）"
+    timeout: 10
+    on_failure: stop
+  - name: allow_port
+    type: command
+    condition: "{{action}} == allow && {{port}} != "
+    description: 放行端口
+    command: "pkexec ufw allow {{port}}/tcp && pkexec ufw allow {{port}}/udp"
+    safety: grey
+    confirm: "放行端口 {{port}}（TCP + UDP）"
+    timeout: 10
+    on_failure: continue
+  - name: deny_port
+    type: command
+    condition: "{{action}} == deny && {{port}} != "
+    description: 拒绝端口
+    command: "pkexec ufw deny {{port}}"
+    safety: grey
+    confirm: "拒绝端口 {{port}} 的入站连接"
+    timeout: 10
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '防火墙操作完成'"

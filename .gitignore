@@ -1,0 +1,56 @@
+# === Python ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+
+# === Virtual environments ===
+venv/
+.venv/
+env/
+
+# === pytest ===
+.pytest_cache/
+
+# === Tauri / Rust build artifacts ===
+desktop/src-tauri/target/
+
+# === Node.js / Frontend build ===
+desktop/node_modules/
+desktop/dist/
+
+# === Tauri codegen (auto-generated) ===
+desktop/src-tauri/gen/
+
+# === IDE / Editor ===
+.trae/
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# === OS ===
+.DS_Store
+Thumbs.db
+desktop.DS_Store
+
+# === Sensitive files ===
+.env
+.env.*
+*.pem
+*.key
+credentials*
+secrets*
+
+# === Local data / runtime ===
+.local/
+*.log
+
+# === Documentation working files ===
+SESSION_CONTEXT.md

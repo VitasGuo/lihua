@@ -1,0 +1,89 @@
+name: network_test
+description: 测试网络连通性（ping / traceroute / DNS / HTTP）
+version: 0.1
+category: network
+author: lihua
+triggers:
+  - 测网
+  - 测试网络
+  - 网络测试
+  - 网络通不通
+  - 网通吗
+  - 网络怎么样
+  - ping
+  - 能不能上网
+  - 能联网吗
+  - 能上网吗
+  - 测速
+  - 测延迟
+  - 测dns
+  - 测试dns
+  - dns测试
+  - 测路由
+  - 路由追踪
+  - traceroute
+  - 测http
+  - 测网站
+examples:
+  - 测一下网
+  - ping baidu.com
+  - 能上网吗
+  - 测 DNS
+parameters:
+  - name: target
+    required: false
+    description: 测试目标（域名或 IP）
+    extract: "(?:ping|traceroute|tracepath)\\s+([a-zA-Z0-9._:-]+)"
+  - name: mode
+    required: false
+    description: 测试模式（ping / traceroute / dns / http）
+    extract: "(ping|traceroute|路由|dns|DNS|http|网站|延迟|速)"
+steps:
+  - name: normalize_mode
+    type: set_var
+    description: 归一化测试模式
+    vars:
+      mode: "{{mode}}"
+  - name: ping_test
+    type: command
+    condition: "{{mode}} ==  || {{mode}} == ping || {{mode}} == 速 || {{mode}} == 延迟"
+    description: 测试到目标的网络连通性
+    command: "ping -c 4 -W 2 {{target|default:223.5.5.5}}"
+    safety: white
+    timeout: 30
+    on_failure: continue
+  - name: traceroute_test
+    type: command
+    condition: "{{mode}} == traceroute || {{mode}} == 路由"
+    description: 追踪到目标的路由路径
+    command: "traceroute -m 20 -w 2 {{target|default:223.5.5.5}} 2>/dev/null || tracepath {{target|default:223.5.5.5}}"
+    safety: white
+    timeout: 60
+    on_failure: continue
+  - name: dns_test
+    type: command
+    condition: "{{mode}} == dns || {{mode}} == DNS"
+    description: 测试 DNS 解析
+    command: "dig +short {{target|default:www.baidu.com}} @223.5.5.5 || nslookup {{target|default:www.baidu.com}}"
+    safety: white
+    timeout: 15
+    on_failure: continue
+  - name: http_test
+    type: command
+    condition: "{{mode}} == http || {{mode}} == 网站"
+    description: 测试 HTTP 访问
+    command: "curl -sI -m 10 -L {{target|default:https://www.baidu.com}} | head -5"
+    safety: white
+    timeout: 15
+    on_failure: continue
+  - name: internet_check
+    type: command
+    condition: "{{target}} ==  && {{mode}} == "
+    description: 综合网络检测（无目标时）
+    command: "echo '=== 网关 ===' ; ip route | grep default ; echo '=== ping 公网 ===' ; ping -c 2 -W 2 223.5.5.5 ; echo '=== DNS ===' ; dig +short www.baidu.com @223.5.5.5 ; echo '=== HTTP ===' ; curl -sI -m 5 https://www.baidu.com | head -3"
+    safety: white
+    timeout: 30
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '网络测试完成'"

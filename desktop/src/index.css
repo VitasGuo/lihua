@@ -1,0 +1,360 @@
+/**
+ * Lihua 狸花猫 - 全局样式
+ *
+ * 设计语言：macOS Sequoia 暗色模式 + Lihua 品牌色
+ *
+ * 关键技术点：
+ *   1. CSS 变量定义在 :root，便于未来扩展亮色模式
+ *   2. 毛玻璃效果用 backdrop-filter（Tauri 2.0 WebView 支持）
+ *   3. GNOME Wayland 下窗口本身可能无法透明，所以窗口底色用半透明深色
+ *      内部用 backdrop-filter 模拟层次（牺牲真透明，保视觉层次）
+ *   4. 滚动条极简：4px 宽，hover 才显示 thumb
+ *   5. 字体渲染优化：-webkit-font-smoothing: antialiased
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+ * 设计令牌（Design Tokens）
+ * ============================================================ */
+
+:root {
+  /* === 字体 === */
+  --font-sans: 'Source Han Sans SC', '思源黑体', 'PingFang SC', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
+  --font-serif: 'Source Han Serif SC', '思源宋体', serif;
+
+  /* === 背景层（从深到浅）=== */
+  --bg-window:    rgba(28, 28, 30, 0.82);   /* 窗口毛玻璃底色 */
+  --bg-primary:   #1C1C1E;                   /* 最深层（侧边栏底） */
+  --bg-secondary: #2C2C2E;                   /* 卡片层 */
+  --bg-tertiary:  #3A3A3C;                   /* hover 层 */
+  --bg-elevated:  #48484A;                   /* 按下/选中层 */
+  --bg-input:     rgba(58, 58, 60, 0.6);     /* 输入框毛玻璃 */
+
+  /* === 文字 === */
+  --text-primary:   #F5F5F7;   /* 主文字 */
+  --text-secondary: #AEAEB2;   /* 次要文字 */
+  --text-tertiary:  #636366;   /* 占位符/禁用 */
+
+  /* === 品牌色（macOS System Green）=== */
+  --accent:       #30D158;
+  --accent-hover: #28B34A;
+  --accent-soft:  rgba(48, 209, 88, 0.18);
+
+  /* === 功能色（macOS 系统色板）=== */
+  --color-blue:   #0A84FF;
+  --color-orange: #FF9F0A;
+  --color-red:    #FF453A;
+  --color-purple: #BF5AF2;
+
+  /* === 边框 === */
+  --border-soft:    rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.10);
+  --border-strong:  rgba(255, 255, 255, 0.18);
+
+  /* === 阴影 === */
+  --shadow-window:  0 24px 80px rgba(0, 0, 0, 0.55), 0 8px 24px rgba(0, 0, 0, 0.4);
+  --shadow-card:    0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-popover: 0 12px 40px rgba(0, 0, 0, 0.5);
+  --shadow-focus:   0 0 0 3px rgba(48, 209, 88, 0.35);
+
+  color-scheme: dark;
+}
+
+/* ============================================================
+ * 基础重置
+ * ============================================================ */
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: transparent;
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: 'kern', 'liga', 'calt';
+  -webkit-text-size-adjust: 100%;
+  overflow: hidden;
+}
+
+/* ============================================================
+ * 滚动条（极简风，4px 宽，hover 才显示 thumb）
+ * ============================================================ */
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 4px;
+  transition: background 200ms ease;
+}
+
+*:hover::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* ============================================================
+ * 毛玻璃工具类
+ * ============================================================ */
+
+/* v0.7.5: 外层容器
+ *   - 圆角 16px + overflow-hidden：让窗口外形是圆角矩形
+ *   - 圆角外的区域完全不渲染（即使 Wayland 下窗口背景是黑色，也不会显示）
+ *   - X11 / 支持 transparent 的合成器下，圆角外直接透明显示桌面
+ *   - Wayland Mutter 不支持真透明，但 overflow-hidden + border-radius
+ *     仍能裁剪 webview 内部内容，让 .window-glass 圆角不被外部黑色破坏
+ */
+.window-outer {
+  border-radius: 16px;
+  overflow: hidden;
+  /* GPU 加速：将整个窗口提升为合成层 */
+  will-change: transform;
+  transform: translateZ(0);
+  contain: layout paint;
+}
+
+/* v0.7.5: 主窗口毛玻璃容器
+ *   - 圆角 16px（与 .window-outer 一致）
+ *   - vignette 用 box-shadow inset 模拟（跟随 border-radius 裁剪）
+ *   - 顶部 1px 高光线（强化"屏幕"质感）
+ *   - 整体 1px 内边框（强化圆角轮廓）
+ *   - GPU 加速：backdrop-filter 自动走 GPU，但加 will-change 确保
+ */
+.window-glass {
+  background: var(--bg-window);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border-radius: 16px;
+  box-shadow:
+    var(--shadow-window),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),     /* 顶部 1px 高光线 */
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06),   /* 整体 1px 内边框 */
+    inset 0 0 32px rgba(0, 0, 0, 0.30),           /* 边缘 32px 深渐变（强化圆角） */
+    inset 0 0 120px rgba(0, 0, 0, 0.12);          /* 边缘 120px 柔和渐变（vignette） */
+  will-change: transform, backdrop-filter;
+  transform: translateZ(0);
+}
+
+.card-glass {
+  background: rgba(60, 60, 67, 0.48);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+.input-glass {
+  background: var(--bg-input);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* ============================================================
+ * 焦点态
+ * ============================================================ */
+
+.focus-ring:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+/* ============================================================
+ * 选中文本
+ * ============================================================ */
+
+::selection {
+  background: rgba(48, 209, 88, 0.3);
+  color: var(--text-primary);
+}
+
+/* ============================================================
+ * 输入框 placeholder
+ * ============================================================ */
+
+input::placeholder, textarea::placeholder {
+  color: var(--text-tertiary);
+  opacity: 1;
+}
+
+/* ============================================================
+ * 思考中：输入框边框呼吸光晕
+ * ============================================================ */
+
+@keyframes thinking-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(48, 209, 88, 0.0);
+  }
+  50% {
+    box-shadow: 0 0 0 3px rgba(48, 209, 88, 0.15);
+  }
+}
+
+.thinking {
+  animation: thinking-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ============================================================
+ * 思考中：文字渐隐动画（替代三个点 dot-anim）
+ * ============================================================ */
+
+@keyframes thinking-dots {
+  0%, 80%, 100% { opacity: 0.2; }
+  40% { opacity: 1; }
+}
+
+.thinking-dots span {
+  display: inline-block;
+  animation: thinking-dots 1.4s infinite ease-in-out;
+}
+
+.thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+.thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+/* ============================================================
+ * 骨架屏 shimmer（加载态）
+ * ============================================================ */
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 2.5s linear infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ============================================================
+ * 窗口出现动画（spring 物理感）
+ * ============================================================ */
+
+@keyframes window-appear {
+  0% {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.window-appear {
+  animation: window-appear 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: center;
+}
+
+/* ============================================================
+ * 消息气泡入场（错落有致）
+ * ============================================================ */
+
+@keyframes message-in {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message-in {
+  animation: message-in 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ============================================================
+ * 工具卡片展开动画
+ * ============================================================ */
+
+@keyframes expand-in {
+  0% {
+    opacity: 0;
+    max-height: 0;
+  }
+  100% {
+    opacity: 1;
+    max-height: 500px;
+  }
+}
+
+.expand-in {
+  animation: expand-in 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+/* ============================================================
+ * 链接 hover
+ * ============================================================ */
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+  transition: color 120ms ease;
+}
+
+a:hover {
+  color: var(--accent-hover);
+}
+
+/* ============================================================
+ * 按钮 hover 微动效（克制）
+ * ============================================================ */
+
+button {
+  transition: background-color 120ms cubic-bezier(0.16, 1, 0.3, 1),
+              color 120ms cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 120ms cubic-bezier(0.16, 1, 0.3, 1),
+              transform 120ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ============================================================
+ * 中文排版优化
+ * ============================================================ */
+
+p {
+  text-wrap: pretty;
+  hanging-punctuation: allow-end;
+}
+
+/* 中文与英文/数字之间自动加空格（更精致） */
+.cjk-spacing {
+  text-autospace: ideograph-alpha ideograph-numeric;
+}

@@ -1,0 +1,75 @@
+name: cleanup_residual
+description: 清理软件包残留配置和无用依赖
+version: 0.1
+category: system
+author: lihua
+triggers:
+  - 清理残留
+  - 清理配置
+  - 清理无用包
+  - 清理依赖
+  - 清理 apt 残留
+  - apt autoremove
+  - autoremove
+  - 清理软件包缓存
+  - 清理安装包
+  - 清理 deb 残留
+  - 清理系统垃圾
+  - 深度清理
+  - 彻底清理
+examples:
+  - 清理残留
+  - 深度清理
+  - 清理系统垃圾
+parameters: []
+steps:
+  - name: apt_autoremove
+    type: command
+    description: 清理不再需要的依赖包
+    command: "pkexec apt autoremove -y"
+    safety: grey
+    confirm: "清理不再需要的依赖包（apt autoremove）"
+    timeout: 300
+    on_failure: continue
+  - name: apt_clean
+    type: command
+    description: 清理 apt 下载缓存
+    command: "pkexec apt clean"
+    safety: grey
+    confirm: "清理 apt 下载缓存（/var/cache/apt/archives）"
+    timeout: 30
+    on_failure: continue
+  - name: apt_purge_residual
+    type: command
+    description: 清理已卸载但残留配置的包
+    command: "pkexec dpkg -l | grep '^rc' | awk '{print $2}' | xargs -r pkexec dpkg --purge"
+    safety: grey
+    confirm: "清理已卸载软件的残留配置文件"
+    timeout: 60
+    on_failure: continue
+  - name: flatpak_unused
+    type: command
+    description: 清理 Flatpak 无用运行时
+    command: "flatpak uninstall --unused -y --noninteractive"
+    safety: grey
+    confirm: "清理 Flatpak 不再使用的运行时"
+    timeout: 120
+    on_failure: continue
+  - name: journal_vacuum
+    type: command
+    description: 清理 systemd 日志（保留最近 7 天）
+    command: "pkexec journalctl --vacuum-time=7d"
+    safety: grey
+    confirm: "清理 systemd 日志（保留最近 7 天）"
+    timeout: 60
+    on_failure: continue
+  - name: thumbnail_cache
+    type: command
+    description: 清理缩略图缓存
+    command: "rm -rf ~/.cache/thumbnails/*"
+    safety: white
+    timeout: 30
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '系统残留清理完成'"

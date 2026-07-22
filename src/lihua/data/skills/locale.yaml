@@ -1,0 +1,71 @@
+name: locale
+description: 设置系统语言环境（中文/英文等）
+version: 0.1
+category: system
+author: lihua
+triggers:
+  - 语言环境
+  - 系统语言
+  - 修改语言
+  - 改语言
+  - 切换语言
+  - 切换中文
+  - 切换英文
+  - 改成中文
+  - 改成英文
+  - 设置中文
+  - 设置英文
+  - locale
+examples:
+  - 切换到中文
+  - 改成英文环境
+parameters:
+  - name: locale_name
+    required: true
+    description: 语言环境（如 zh_CN.UTF-8 / en_US.UTF-8 / ja_JP.UTF-8）
+    extract: "(?:切换|改|更改|设置|set|change)\\s*(?:到|成|为)?\\s*(?:中文|zh|zh_CN|Chinese)(?:\\s|$)|(?:切换|改|更改|设置|set|change)\\s*(?:到|成|为)?\\s*(?:英文|en|en_US|English)(?:\\s|$)|(?:切换|改|更改|设置)\\s*(?:到|成|为)?\\s*(zh_CN\\.UTF-8|en_US\\.UTF-8|zh_TW\\.UTF-8|zh_HK\\.UTF-8|ja_JP\\.UTF-8|ko_KR\\.UTF-8|fr_FR\\.UTF-8|de_DE\\.UTF-8|es_ES\\.UTF-8|ru_RU\\.UTF-8|pt_BR\\.UTF-8|it_IT\\.UTF-8)"
+aliases:
+  中文: ["zh_CN.UTF-8"]
+  简体中文: ["zh_CN.UTF-8"]
+  中文环境: ["zh_CN.UTF-8"]
+  英文: ["en_US.UTF-8"]
+  英文环境: ["en_US.UTF-8"]
+  繁体中文: ["zh_TW.UTF-8"]
+  台湾中文: ["zh_TW.UTF-8"]
+  香港中文: ["zh_HK.UTF-8"]
+  日文: ["ja_JP.UTF-8"]
+  日本语: ["ja_JP.UTF-8"]
+  韩文: ["ko_KR.UTF-8"]
+  韩国语: ["ko_KR.UTF-8"]
+  法文: ["fr_FR.UTF-8"]
+  法语: ["fr_FR.UTF-8"]
+  德文: ["de_DE.UTF-8"]
+  德语: ["de_DE.UTF-8"]
+  西班牙文: ["es_ES.UTF-8"]
+  西班牙语: ["es_ES.UTF-8"]
+  俄文: ["ru_RU.UTF-8"]
+  俄语: ["ru_RU.UTF-8"]
+  葡萄牙文: ["pt_BR.UTF-8"]
+  葡萄牙语: ["pt_BR.UTF-8"]
+  意大利文: ["it_IT.UTF-8"]
+  意大利语: ["it_IT.UTF-8"]
+steps:
+  - name: generate
+    type: command
+    description: 生成语言环境
+    command: "pkexec locale-gen {{locale_name}}"
+    safety: grey
+    confirm: "生成语言环境 {{locale_name}}"
+    timeout: 30
+    on_failure: stop
+  - name: set_locale
+    type: command
+    description: 设置系统默认语言
+    command: "pkexec update-locale LANG={{locale_name}}"
+    safety: grey
+    confirm: "设置系统默认语言为 {{locale_name}}（重启后生效）"
+    timeout: 10
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '语言环境已设置为 {{locale_name}}（重新登录后生效）'"

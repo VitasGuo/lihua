@@ -1,0 +1,69 @@
+name: process_manager
+description: 进程管理（查看 / 排序 / 按名查找）
+version: 0.1
+category: process
+author: lihua
+triggers:
+  - 进程
+  - 看进程
+  - 查看进程
+  - 进程列表
+  - 进程管理
+  - 看运行
+  - 查看运行
+  - 运行的程序
+  - 在运行什么
+  - top
+  - ps
+  - 看资源
+  - 资源占用
+  - 占用最高
+examples:
+  - 看进程
+  - 占用最高的进程
+  - 查找 nginx 进程
+parameters:
+  - name: filter
+    required: false
+    description: 进程名过滤
+    extract: "(?:查找|找|查|搜索)\\s*(?:进程)?\\s*(.+?)\\s*$"
+  - name: sort_by
+    required: false
+    description: 排序方式（cpu / mem / pid）
+    extract: "(cpu|内存|mem|pid)"
+steps:
+  - name: top_cpu
+    type: command
+    condition: "{{filter}} ==  && ({{sort_by}} ==  || {{sort_by}} == cpu)"
+    description: 查看占用 CPU 最高的进程
+    command: "echo '=== Top 15 CPU 占用 ===' ; ps -eo pid,user,pcpu,pmem,comm --sort=-pcpu | head -16"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: top_mem
+    type: command
+    condition: "{{filter}} ==  && {{sort_by}} == 内存 || {{sort_by}} == mem"
+    description: 查看占用内存最高的进程
+    command: "echo '=== Top 15 内存占用 ===' ; ps -eo pid,user,pcpu,pmem,rss,comm --sort=-rss | head -16"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: find_process
+    type: command
+    condition: "{{filter}} != "
+    description: 按名查找进程
+    command: "echo '=== 包含 {{filter}} 的进程 ===' ; ps -eo pid,user,pcpu,pmem,etime,comm,args | grep -i '{{filter}}' | grep -v grep | head -20"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: summary
+    type: command
+    condition: "{{filter}} ==  && {{sort_by}} == "
+    description: 进程总览
+    command: "echo '=== 进程总数 ===' ; ps -e --no-headers | wc -l ; echo '=== 系统负载 ===' ; uptime ; echo '=== CPU 使用 ===' ; top -bn1 | head -5 ; echo ; echo '=== 内存 ===' ; free -h"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '进程列表已显示'"

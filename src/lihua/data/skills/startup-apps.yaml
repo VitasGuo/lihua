@@ -1,0 +1,71 @@
+name: startup_apps
+description: 管理开机启动项（查看/添加/删除）
+version: 0.1
+category: system
+author: lihua
+triggers:
+  - 启动项
+  - 开机启动
+  - 开机自启
+  - 自启动
+  - 自启项
+  - 开机项
+  - 启动管理
+  - autostart
+  - startup
+examples:
+  - 查看启动项
+  - 添加开机启动
+parameters:
+  - name: action
+    required: true
+    description: 操作（list/add/remove）
+    extract: "(?:查看|看下|列出|list)\\s*(?:启动项|自启动|开机启动)?\\s*$|(?:添加|加|add)\\s*(\\S+)\\s*(?:到)?\\s*(?:启动项|开机启动|自启动)?\\s*$|(?:删除|移除|remove)\\s*(\\S+)\\s*(?:启动项|自启动|开机启动)?\\s*$"
+  - name: app_name
+    required: false
+    description: 应用名（添加/删除时）
+    extract: "(?:添加|加|add)\\s+(\\S+)|(?:删除|移除|remove)\\s+(\\S+)"
+steps:
+  - name: list_user_autostart
+    type: command
+    condition: "{{action}} == list"
+    description: 列出用户开机启动项
+    command: "ls -la ~/.config/autostart/ 2>/dev/null || echo '无用户启动项'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: list_system_autostart
+    type: command
+    condition: "{{action}} == list"
+    description: 列出系统开机启动项
+    command: "ls /etc/xdg/autostart/ 2>/dev/null | head -20"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: list_systemd_user_units
+    type: command
+    condition: "{{action}} == list"
+    description: 列出用户 systemd 自启服务
+    command: "systemctl --user list-unit-files --state=enabled --no-pager | head -20"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: add_autostart
+    type: command
+    condition: "{{action}} == add && {{app_name}} != "
+    description: 添加开机启动
+    command: "cp /usr/share/applications/{{app_name}}.desktop ~/.config/autostart/ 2>/dev/null || echo '[Desktop Entry]\\nType=Application\\nName={{app_name}}\\nExec={{app_name}}\\nTerminal=false\\nX-GNOME-Autostart-enabled=true' > ~/.config/autostart/{{app_name}}.desktop"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: remove_autostart
+    type: command
+    condition: "{{action}} == remove && {{app_name}} != "
+    description: 删除开机启动
+    command: "rm -f ~/.config/autostart/{{app_name}}.desktop"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '启动项操作完成'"

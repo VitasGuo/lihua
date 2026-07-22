@@ -1,0 +1,73 @@
+name: timezone
+description: 设置系统时区
+version: 0.1
+category: system
+author: lihua
+triggers:
+  - 时区
+  - 设置时区
+  - 修改时区
+  - 改时区
+  - 切换时区
+  - 时区设置
+  - timezone
+  - set timezone
+examples:
+  - 设置时区上海
+  - 改成东八区
+  - 切换到 UTC
+parameters:
+  - name: timezone
+    required: true
+    description: 时区名（如 Asia/Shanghai、UTC、America/New_York）
+    extract: "(?:设置|修改|改|更改|切换|set|change)\\s*(?:成|到|为)?\\s*(?:时区\\s*)?(?:Asia/Shanghai|Asia/Tokyo|Asia/Seoul|Asia/Hong_Kong|Asia/Taipei|Asia/Singapore|Asia/Bangkok|Asia/Dubai|Europe/London|Europe/Paris|Europe/Berlin|Europe/Moscow|America/New_York|America/Los_Angeles|America/Chicago|America/Denver|America/Sao_Paulo|Australia/Sydney|UTC|GMT|Etc/UTC|东八区|北京时间|上海时间|东京时间|伦敦时间|纽约时间|洛杉矶时间|巴黎时间|柏林时间|莫斯科时间|首尔时间|香港时间|台北时间|新加坡时间|悉尼时间|迪拜时间|曼谷时间|UTC|GMT)(?:\\s|$)"
+aliases:
+  东八区: ["Asia/Shanghai"]
+  北京时间: ["Asia/Shanghai"]
+  上海时间: ["Asia/Shanghai"]
+  中国时间: ["Asia/Shanghai"]
+  东京时间: ["Asia/Tokyo"]
+  日本时间: ["Asia/Tokyo"]
+  韩国时间: ["Asia/Seoul"]
+  首尔时间: ["Asia/Seoul"]
+  香港时间: ["Asia/Hong_Kong"]
+  台北时间: ["Asia/Taipei"]
+  新加坡时间: ["Asia/Singapore"]
+  悉尼时间: ["Australia/Sydney"]
+  澳洲时间: ["Australia/Sydney"]
+  迪拜时间: ["Asia/Dubai"]
+  曼谷时间: ["Asia/Bangkok"]
+  伦敦时间: ["Europe/London"]
+  英国时间: ["Europe/London"]
+  巴黎时间: ["Europe/Paris"]
+  法国时间: ["Europe/Paris"]
+  柏林时间: ["Europe/Berlin"]
+  德国时间: ["Europe/Berlin"]
+  莫斯科时间: ["Europe/Moscow"]
+  俄罗斯时间: ["Europe/Moscow"]
+  纽约时间: ["America/New_York"]
+  美东时间: ["America/New_York"]
+  洛杉矶时间: ["America/Los_Angeles"]
+  美西时间: ["America/Los_Angeles"]
+  芝加哥时间: ["America/Chicago"]
+  美中时间: ["America/Chicago"]
+  丹佛时间: ["America/Denver"]
+  UTC: ["UTC"]
+  GMT: ["Etc/UTC"]
+steps:
+  - name: set_timezone
+    type: command
+    description: 设置系统时区
+    command: "pkexec timedatectl set-timezone {{timezone}}"
+    safety: grey
+    confirm: "设置系统时区为 {{timezone}}"
+    timeout: 10
+    on_failure: stop
+  - name: verify
+    type: verify
+    description: 验证时区
+    command: "timedatectl | grep 'Time zone'"
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '时区已设置为 {{timezone}}'"

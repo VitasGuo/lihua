@@ -1,0 +1,92 @@
+name: file_extract
+description: 解压文件（支持 zip/tar.gz/tar.bz2/tar.xz/rar/7z）
+version: 0.1
+category: file
+author: lihua
+triggers:
+  - 解压
+  - 解压缩
+  - 解开
+  - 提取
+  - unzip
+  - extract
+  - untar
+  - 解包
+examples:
+  - 解压 file.zip
+  - 解压 file.tar.gz
+parameters:
+  - name: file
+    required: true
+    description: 文件路径
+    extract: "(?:解压|解压缩|解开|提取|unzip|extract|untar|解包)\\s+(.+?)(?:\\s+到\\s+(.+))?\\s*$"
+  - name: dest
+    required: false
+    description: 目标目录
+    extract: "(?:解压|解压缩|解开|提取|unzip|extract|untar|解包)\\s+(.+?)\\s+到\\s+(.+?)\\s*$"
+steps:
+  - name: detect_format
+    type: set_var
+    vars:
+      file: "{{file}}"
+      dest: "{{dest}}"
+    description: 解析文件格式
+  - name: extract_zip
+    type: command
+    condition: "{{file}} =~ \\.zip$"
+    description: 解压 zip 文件
+    command: "unzip -o '{{file}}' -d '{{dest}}'"
+    safety: white
+    timeout: 300
+    on_failure: continue
+  - name: extract_tar_gz
+    type: command
+    condition: "{{file}} =~ \\.(tar\\.gz|tgz)$"
+    description: 解压 tar.gz 文件
+    command: "tar -xzf '{{file}}' -C '{{dest}}'"
+    safety: white
+    timeout: 300
+    on_failure: continue
+  - name: extract_tar_bz2
+    type: command
+    condition: "{{file}} =~ \\.(tar\\.bz2|tbz2)$"
+    description: 解压 tar.bz2 文件
+    command: "tar -xjf '{{file}}' -C '{{dest}}'"
+    safety: white
+    timeout: 300
+    on_failure: continue
+  - name: extract_tar_xz
+    type: command
+    condition: "{{file}} =~ \\.(tar\\.xz|txz)$"
+    description: 解压 tar.xz 文件
+    command: "tar -xJf '{{file}}' -C '{{dest}}'"
+    safety: white
+    timeout: 300
+    on_failure: continue
+  - name: extract_tar
+    type: command
+    condition: "{{file}} =~ \\.tar$"
+    description: 解压 tar 文件
+    command: "tar -xf '{{file}}' -C '{{dest}}'"
+    safety: white
+    timeout: 300
+    on_failure: continue
+  - name: extract_7z
+    type: command
+    condition: "{{file}} =~ \\.7z$"
+    description: 解压 7z 文件
+    command: "7z x '{{file}}' -o'{{dest}}' -y"
+    safety: white
+    timeout: 300
+    on_failure: continue
+  - name: extract_rar
+    type: command
+    condition: "{{file}} =~ \\.rar$"
+    description: 解压 rar 文件
+    command: "unrar x -y '{{file}}' '{{dest}}'"
+    safety: white
+    timeout: 300
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '解压完成：{{file}}'"

@@ -1,0 +1,54 @@
+name: keyboard_layout
+description: 键盘布局管理（查看 / 切换 / 添加 / 删除）
+version: 0.1
+category: desktop_hw
+author: lihua
+triggers:
+  - 键盘布局
+  - 切换键盘布局
+  - 查看键盘布局
+  - 键盘设置
+  - 添加键盘布局
+  - 删除键盘布局
+  - keyboard layout
+examples:
+  - 查看键盘布局
+  - 切换键盘布局 us
+parameters:
+  - name: action
+    required: false
+    description: 操作（切换 / 查看 / 添加 / 删除 / 列表）
+    extract: "(切换|查看|添加|删除|列表)"
+  - name: layout
+    required: false
+    description: 键盘布局代码（如 us / cn / jp）
+    extract: "(?:切换|添加|删除)\\s+(?:键盘\\s+)?(?:布局\\s+)?(.+?)\\s*$"
+steps:
+  - name: show_current
+    type: command
+    condition: "{{action}} == 查看 || {{action}} == 列表 || {{action}} == "
+    description: 查看当前键盘布局
+    command: "echo '=== 当前键盘布局 ===' ; setxkbmap -query 2>/dev/null ; echo ; echo '=== 系统级 ===' ; localectl status 2>/dev/null || echo 'localectl 不可用'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: list_layouts
+    type: command
+    condition: "{{action}} == 查看 || {{action}} == 列表 || {{action}} == "
+    description: 列出可用的键盘布局
+    command: "echo '=== 可用键盘布局（前 20 个） ===' ; localectl list-x11-keymap-layouts 2>/dev/null | head -20 || echo 'localectl 不可用'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: switch_layout
+    type: command
+    condition: "{{action}} == 切换 && {{layout}} != "
+    description: 切换键盘布局
+    command: "setxkbmap {{layout}} 2>/dev/null ; gsettings set org.gnome.desktop.input-sources sources \"[('xkb', '{{layout}}')]\" 2>/dev/null ; echo '已切换键盘布局为 {{layout}}'"
+    safety: grey
+    confirm: "切换键盘布局为 {{layout}}"
+    timeout: 5
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '键盘布局操作完成'"

@@ -1,0 +1,80 @@
+name: system_info
+description: 查看系统信息（版本、CPU、内存、磁盘、内核、主机名等）
+version: 0.1
+category: system
+author: lihua
+triggers:
+  - 系统信息
+  - 系统版本
+  - 查看系统
+  - 看看系统
+  - 系统概览
+  - 系统概况
+  - 系统状态
+  - 系统配置
+  - 主机信息
+  - 设备信息
+  - 电脑信息
+  - 电脑配置
+  - uname
+  - neofetch
+  - fastfetch
+examples:
+  - 系统信息
+  - 看看系统版本
+  - 电脑配置
+parameters:
+  - name: section
+    required: false
+    description: 查看的部分（all/cpu/memory/disk/network/host）
+    extract: "(?:查看|看看|看下|查下|显示)?\\s*(?:系统|电脑|设备)?\\s*(?:信息|版本|配置|概览|概况|状态)?\\s*(?:all|cpu|memory|mem|ram|disk|network|net|host|os|kernel|全部|CPU|内存|磁盘|网络|主机|系统)?\\s*$"
+steps:
+  - name: os_info
+    type: command
+    description: 操作系统信息
+    command: "lsb_release -a 2>/dev/null || cat /etc/os-release"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: kernel
+    type: command
+    description: 内核版本
+    command: "uname -a"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: hostname
+    type: command
+    description: 主机名
+    command: "hostnamectl"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: cpu
+    type: command
+    description: CPU 信息
+    command: "lscpu | head -30"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: memory
+    type: command
+    description: 内存信息
+    command: "free -h"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: disk
+    type: command
+    description: 磁盘空间
+    command: "df -h | grep -v tmpfs"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: uptime
+    type: command
+    description: 运行时间
+    command: "uptime"
+    safety: white
+    timeout: 10
+    on_failure: continue

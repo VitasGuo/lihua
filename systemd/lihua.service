@@ -1,0 +1,15 @@
+[Unit]
+Description=Lihua AI Assistant (狸花猫)
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+# ExecStart 会被 `lihua install` 命令自动替换为实际路径
+ExecStart=/usr/bin/env lihua serve --host 127.0.0.1 --port 7788
+Restart=always
+RestartSec=3
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=default.target

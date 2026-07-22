@@ -1,0 +1,72 @@
+name: install_snap
+description: 通过 Snap 安装应用
+version: 0.1
+category: install
+author: lihua
+triggers:
+  - 装 snap
+  - 安装 snap
+  - 用 snap 装
+  - snap 安装
+  - 装 snap 包
+examples:
+  - 装 snap code
+  - 用 snap 装 vlc
+parameters:
+  - name: package
+    required: true
+    description: Snap 包名
+    extract: "(?:装|安装|用\\s*snap\\s*装)\\s*(?:snap\\s+)?(.+?)\\s*$"
+aliases:
+  vscode: ["code"]
+  visual studio code: ["code"]
+  code: ["code"]
+  vlc: ["vlc"]
+  spotify: ["spotify"]
+  slack: ["slack"]
+  discord: ["discord"]
+  telegram: ["telegram-desktop"]
+  电报: ["telegram-desktop"]
+  chromium: ["chromium"]
+  firefox: ["firefox"]
+  blender: ["blender"]
+  gimp: ["gimp"]
+  inkscape: ["inkscape"]
+  obs: ["obs-studio"]
+  obs studio: ["obs-studio"]
+  android studio: ["android-studio"]
+  pycharm: ["pycharm-community"]
+  intellij idea: ["intellij-idea-community"]
+  clion: ["clion"]
+  postman: ["postman"]
+  docker: ["docker"]
+  node: ["node"]
+  go: ["go"]
+  rust: ["rustup"]
+  deno: ["deno"]
+  mailspring: ["mailspring"]
+  standard notes: ["standard-notes"]
+  bitwarden: ["bitwarden"]
+  keepassxc: ["keepassxc"]
+steps:
+  - name: check_snap
+    type: verify
+    description: 检查 snap 是否可用
+    command: "which snap && snap version | head -3"
+    on_failure: stop
+  - name: install
+    type: command
+    description: 通过 snap 安装应用
+    command: "pkexec snap install {{package}}"
+    safety: grey
+    confirm: "通过 Snap 安装 {{package}}"
+    timeout: 600
+    on_failure: stop
+  - name: verify
+    type: verify
+    description: 验证安装
+    command: "snap list | grep -i {{package}} || which {{package}}"
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '{{package}} 已通过 Snap 安装'"

@@ -1,0 +1,72 @@
+name: screenshot
+description: 截图（全屏 / 区域 / 窗口 / 延时）
+version: 0.1
+category: desktop
+author: lihua
+triggers:
+  - 截图
+  - 截屏
+  - 截一下
+  - 截全屏
+  - 截区域
+  - 截窗口
+  - 截当前
+  - 屏幕截图
+  - 截图工具
+  - screenshot
+examples:
+  - 截图
+  - 截全屏
+  - 截区域
+parameters:
+  - name: mode
+    required: false
+    description: 截图模式（full / region / window / delay）
+    extract: "(全屏|区域|窗口|当前|延时|延迟)"
+  - name: delay
+    required: false
+    description: 延时秒数
+    extract: "延时\\s*(\\d+)|延迟\\s*(\\d+)"
+steps:
+  - name: ensure_dir
+    type: command
+    description: 确保截图目录存在
+    command: "mkdir -p ~/Pictures/Screenshots"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: full_screen
+    type: command
+    condition: "{{mode}} ==  || {{mode}} == 全屏"
+    description: 截全屏
+    command: "FILE=~/Pictures/Screenshots/$(date +%Y%m%d_%H%M%S).png ; (gnome-screenshot -f \"$FILE\" 2>/dev/null && echo \"已保存：$FILE\") || (grim \"$FILE\" 2>/dev/null && wl-copy < \"$FILE\" 2>/dev/null ; echo \"已保存：$FILE\") || (import -window root \"$FILE\" 2>/dev/null && echo \"已保存：$FILE\") || echo '截图失败，请安装 gnome-screenshot 或 grim'"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: region
+    type: command
+    condition: "{{mode}} == 区域"
+    description: 截区域
+    command: "FILE=~/Pictures/Screenshots/$(date +%Y%m%d_%H%M%S).png ; (gnome-screenshot -a -f \"$FILE\" 2>/dev/null && echo \"已保存：$FILE\") || (grim -g \"$(slurp)\" \"$FILE\" 2>/dev/null && wl-copy < \"$FILE\" 2>/dev/null ; echo \"已保存：$FILE\") || (import \"$FILE\" 2>/dev/null && echo \"已保存：$FILE\") || echo '截图失败'"
+    safety: white
+    timeout: 30
+    on_failure: continue
+  - name: window
+    type: command
+    condition: "{{mode}} == 窗口 || {{mode}} == 当前"
+    description: 截当前窗口
+    command: "FILE=~/Pictures/Screenshots/$(date +%Y%m%d_%H%M%S).png ; (gnome-screenshot -w -f \"$FILE\" 2>/dev/null && echo \"已保存：$FILE\") || (import -window \"$(xdotool getactivewindow 2>/dev/null)\" \"$FILE\" 2>/dev/null && echo \"已保存：$FILE\") || echo '截图失败'"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: delay_shot
+    type: command
+    condition: "{{mode}} == 延时 || {{mode}} == 延迟"
+    description: 延时截图
+    command: "SEC={{delay|default:5}} ; FILE=~/Pictures/Screenshots/$(date +%Y%m%d_%H%M%S).png ; echo \"${SEC} 秒后截图...\" ; sleep $SEC ; (gnome-screenshot -f \"$FILE\" 2>/dev/null && echo \"已保存：$FILE\") || (grim \"$FILE\" 2>/dev/null && echo \"已保存：$FILE\") || echo '截图失败'"
+    safety: white
+    timeout: 60
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '截图已保存到 ~/Pictures/Screenshots'"

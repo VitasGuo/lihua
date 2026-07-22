@@ -1,0 +1,117 @@
+name: mirror_source
+description: 切换国内镜像源（清华/中科大/阿里/华为/腾讯，兼容 Ubuntu 24.04 新格式）
+version: 0.1
+category: mirror
+author: lihua
+triggers:
+  - 换源
+  - 切换源
+  - 镜像源
+  - 换镜像源
+  - 切换镜像
+  - 国内源
+  - 清华源
+  - 中科大源
+  - 阿里源
+  - 华为云源
+  - 腾讯云源
+  - apt源
+  - 更换源
+  - 换apt源
+examples:
+  - 换清华源
+  - 切换镜像源
+  - 换阿里源
+parameters:
+  - name: mirror
+    required: false
+    description: 镜像名（清华/中科大/阿里/华为/腾讯/默认/官方）
+    extract: "(清华|中科大|ustc|阿里|aliyun|华为|huawei|腾讯|tencent|163|网易|默认|官方)"
+steps:
+  - name: show_current
+    type: command
+    description: 显示当前 apt 源
+    command: "echo '=== 当前 apt 源 ===' ; if [ -f /etc/apt/sources.list.d/ubuntu.sources ] ; then head -20 /etc/apt/sources.list.d/ubuntu.sources ; else head -20 /etc/apt/sources.list 2>/dev/null ; fi"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: detect_version
+    type: command
+    description: 检测 Ubuntu 版本代号
+    command: "echo '=== Ubuntu 版本 ===' ; lsb_release -cs 2>/dev/null || grep VERSION_CODENAME /etc/os-release | cut -d= -f2"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: backup
+    type: command
+    description: 备份原 apt 源到 .lihua.bak
+    command: "if [ -f /etc/apt/sources.list.d/ubuntu.sources ] ; then pkexec cp /etc/apt/sources.list.d/ubuntu.sources /etc/apt/sources.list.d/ubuntu.sources.lihua.bak ; else pkexec cp /etc/apt/sources.list /etc/apt/sources.list.lihua.bak 2>/dev/null ; fi ; echo '已备份原 apt 源'"
+    safety: grey
+    confirm: "备份原 apt 源到 .lihua.bak"
+    timeout: 10
+    on_failure: stop
+  - name: switch_tuna
+    type: command
+    condition: "{{mirror}} == 清华 || {{mirror}} == "
+    description: 切换到清华源（默认）
+    command: "if [ -f /etc/apt/sources.list.d/ubuntu.sources ] ; then pkexec sed -i 's|http://archive.ubuntu.com|https://mirrors.tuna.tsinghua.edu.cn|g; s|http://security.ubuntu.com|https://mirrors.tuna.tsinghua.edu.cn|g' /etc/apt/sources.list.d/ubuntu.sources ; else pkexec sed -i 's|http://archive.ubuntu.com|https://mirrors.tuna.tsinghua.edu.cn|g; s|http://security.ubuntu.com|https://mirrors.tuna.tsinghua.edu.cn|g' /etc/apt/sources.list ; fi ; echo '已切换到清华源（TUNA）'"
+    safety: grey
+    confirm: "切换 apt 源到清华镜像（TUNA）"
+    timeout: 30
+    on_failure: stop
+  - name: switch_ustc
+    type: command
+    condition: "{{mirror}} == 中科大"
+    description: 切换到中科大源
+    command: "if [ -f /etc/apt/sources.list.d/ubuntu.sources ] ; then pkexec sed -i 's|http://archive.ubuntu.com|https://mirrors.ustc.edu.cn|g; s|http://security.ubuntu.com|https://mirrors.ustc.edu.cn|g' /etc/apt/sources.list.d/ubuntu.sources ; else pkexec sed -i 's|http://archive.ubuntu.com|https://mirrors.ustc.edu.cn|g; s|http://security.ubuntu.com|https://mirrors.ustc.edu.cn|g' /etc/apt/sources.list ; fi ; echo '已切换到中科大源（USTC）'"
+    safety: grey
+    confirm: "切换 apt 源到中科大镜像（USTC）"
+    timeout: 30
+    on_failure: stop
+  - name: switch_aliyun
+    type: command
+    condition: "{{mirror}} == 阿里"
+    description: 切换到阿里源
+    command: "if [ -f /etc/apt/sources.list.d/ubuntu.sources ] ; then pkexec sed -i 's|http://archive.ubuntu.com|https://mirrors.aliyun.com|g; s|http://security.ubuntu.com|https://mirrors.aliyun.com|g' /etc/apt/sources.list.d/ubuntu.sources ; else pkexec sed -i 's|http://archive.ubuntu.com|https://mirrors.aliyun.com|g; s|http://security.ubuntu.com|https://mirrors.aliyun.com|g' /etc/apt/sources.list ; fi ; echo '已切换到阿里云源'"
+    safety: grey
+    confirm: "切换 apt 源到阿里云镜像"
+    timeout: 30
+    on_failure: stop
+  - name: switch_huawei
+    type: command
+    condition: "{{mirror}} == 华为"
+    description: 切换到华为云源
+    command: "if [ -f /etc/apt/sources.list.d/ubuntu.sources ] ; then pkexec sed -i 's|http://archive.ubuntu.com|https://mirrors.huaweicloud.com|g; s|http://security.ubuntu.com|https://mirrors.huaweicloud.com|g' /etc/apt/sources.list.d/ubuntu.sources ; else pkexec sed -i 's|http://archive.ubuntu.com|https://mirrors.huaweicloud.com|g; s|http://security.ubuntu.com|https://mirrors.huaweicloud.com|g' /etc/apt/sources.list ; fi ; echo '已切换到华为云源'"
+    safety: grey
+    confirm: "切换 apt 源到华为云镜像"
+    timeout: 30
+    on_failure: stop
+  - name: switch_tencent
+    type: command
+    condition: "{{mirror}} == 腾讯"
+    description: 切换到腾讯云源
+    command: "if [ -f /etc/apt/sources.list.d/ubuntu.sources ] ; then pkexec sed -i 's|http://archive.ubuntu.com|https://mirrors.cloud.tencent.com|g; s|http://security.ubuntu.com|https://mirrors.cloud.tencent.com|g' /etc/apt/sources.list.d/ubuntu.sources ; else pkexec sed -i 's|http://archive.ubuntu.com|https://mirrors.cloud.tencent.com|g; s|http://security.ubuntu.com|https://mirrors.cloud.tencent.com|g' /etc/apt/sources.list ; fi ; echo '已切换到腾讯云源'"
+    safety: grey
+    confirm: "切换 apt 源到腾讯云镜像"
+    timeout: 30
+    on_failure: stop
+  - name: restore_official
+    type: command
+    condition: "{{mirror}} == 默认 || {{mirror}} == 官方"
+    description: 从备份恢复为官方源
+    command: "if [ -f /etc/apt/sources.list.d/ubuntu.sources.lihua.bak ] ; then pkexec cp /etc/apt/sources.list.d/ubuntu.sources.lihua.bak /etc/apt/sources.list.d/ubuntu.sources ; elif [ -f /etc/apt/sources.list.lihua.bak ] ; then pkexec cp /etc/apt/sources.list.lihua.bak /etc/apt/sources.list ; else echo '未找到 .lihua.bak 备份，无法恢复官方源' ; exit 1 ; fi ; echo '已恢复为官方源'"
+    safety: grey
+    confirm: "从 .lihua.bak 备份恢复 apt 源为官方源"
+    timeout: 10
+    on_failure: continue
+  - name: apt_update
+    type: command
+    description: 刷新 apt 索引
+    command: "pkexec apt update"
+    safety: grey
+    confirm: "执行 apt update 刷新索引"
+    timeout: 300
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' 'apt 镜像源切换完成'"

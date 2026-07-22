@@ -1,0 +1,66 @@
+name: disk_mount
+description: 挂载 / 卸载磁盘分区（mount / umount，含 lsblk 设备列表）
+version: 0.1
+category: file_adv
+author: lihua
+triggers:
+  - 挂载磁盘
+  - 挂载硬盘
+  - 挂载U盘
+  - 卸载磁盘
+  - 卸载硬盘
+  - 卸载U盘
+  - 挂载分区
+  - 卸载分区
+  - mount磁盘
+  - umount磁盘
+  - 挂载
+  - 卸载
+examples:
+  - 挂载磁盘 /dev/sdb1
+  - 卸载 /dev/sdb1
+parameters:
+  - name: action
+    required: true
+    description: 操作（挂载 / 卸载）
+    extract: "(挂载|卸载|umount|mount)"
+  - name: device
+    required: false
+    description: 设备路径（如 /dev/sdb1）
+    extract: "(?:挂载|卸载)\\s+(?:磁盘\\s+|硬盘\\s+|U盘\\s+|分区\\s+)?(.+?)\\s*$"
+steps:
+  - name: list_devices
+    type: command
+    description: 列出所有块设备和文件系统
+    command: "lsblk -f"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: check_mount
+    type: command
+    description: 查看设备当前挂载状态
+    command: "mount | grep '{{device|default:sd}}'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: mount
+    type: command
+    condition: "{{action}} == 挂载 && {{device}} != "
+    description: 挂载设备到 /mnt
+    command: "pkexec mount '{{device}}' /mnt"
+    safety: grey
+    confirm: "挂载 {{device}} 到 /mnt"
+    timeout: 30
+    on_failure: stop
+  - name: umount
+    type: command
+    condition: "{{action}} == 卸载 && {{device}} != "
+    description: 卸载设备
+    command: "pkexec umount '{{device}}'"
+    safety: grey
+    confirm: "卸载 {{device}}"
+    timeout: 30
+    on_failure: stop
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '{{action}}完成：{{device}}'"

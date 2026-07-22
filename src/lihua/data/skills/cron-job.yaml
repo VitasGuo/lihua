@@ -1,0 +1,70 @@
+name: cron_job
+description: 定时任务管理（cron / crontab，查看 / 添加 / 编辑 / 删除）
+version: 0.1
+category: network_sys
+author: lihua
+triggers:
+  - 定时任务
+  - cron任务
+  - cron
+  - crontab
+  - 添加定时任务
+  - 查看定时任务
+  - 删除定时任务
+  - 定时执行
+examples:
+  - 查看定时任务
+  - 添加定时任务
+  - 定时执行 backup.sh
+parameters:
+  - name: action
+    required: false
+    description: 操作（添加 / 查看 / 删除 / 列表 / 编辑）
+    extract: "(添加|查看|删除|列表|编辑)"
+  - name: schedule
+    required: false
+    description: cron 时间表达式（如 0 * * * *）
+    extract: "(?:每天|每小时|每分钟|每周|每月|cron)\\s+(.+?)\\s*$"
+  - name: command
+    required: false
+    description: 要定时执行的命令
+    extract: "(?:执行|运行)\\s+(.+?)\\s*$"
+steps:
+  - name: list_jobs
+    type: command
+    condition: "{{action}} == 查看 || {{action}} == 列表 || {{action}} == "
+    description: 查看当前 crontab
+    command: "echo '=== 当前用户 crontab ===' ; crontab -l 2>/dev/null || echo '（无 crontab 任务）'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: add_job
+    type: command
+    condition: "{{action}} == 添加"
+    description: 添加定时任务到 crontab
+    command: "(crontab -l 2>/dev/null ; echo '{{schedule|default:0 * * * *}} {{command}}') | crontab - && echo '已添加：{{schedule|default:0 * * * *}} {{command}}'"
+    safety: grey
+    confirm: "添加定时任务：{{schedule|default:0 * * * *}} 执行 {{command}}"
+    timeout: 10
+    on_failure: stop
+  - name: edit_crontab
+    type: command
+    condition: "{{action}} == 编辑"
+    description: 打开 crontab 编辑器（交互式）
+    command: "crontab -e"
+    safety: grey
+    confirm: "打开 crontab 编辑器（交互式，需要终端）"
+    timeout: 60
+    on_failure: continue
+  - name: remove_all
+    type: command
+    condition: "{{action}} == 删除"
+    description: 删除所有定时任务（不可恢复）
+    command: "crontab -r && echo '所有定时任务已删除'"
+    safety: grey
+    confirm: "⚠️ 删除所有定时任务（不可恢复，建议先 crontab -l 备份）"
+    timeout: 10
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '定时任务操作完成'"

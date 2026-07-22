@@ -1,0 +1,62 @@
+name: cleanup_apt
+description: 清理 apt 缓存和下载的 deb 包
+version: 0.1
+category: install
+author: lihua
+triggers:
+  - 清理 apt
+  - apt 清理
+  - 清 apt 缓存
+  - 清 apt
+  - 清理 deb 缓存
+  - 清理 deb 包
+  - 清理 apt 缓存
+  - 清理 apt 下载
+  - apt clean
+  - apt autoclean
+examples:
+  - 清理 apt 缓存
+  - 清 apt
+parameters: []
+steps:
+  - name: show_size
+    type: command
+    description: 显示当前 apt 缓存大小
+    command: "echo '=== apt 缓存大小 ===' ; du -sh /var/cache/apt/archives/ 2>/dev/null ; echo ; echo '=== 缓存文件数 ===' ; ls /var/cache/apt/archives/*.deb 2>/dev/null | wc -l"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: autoclean
+    type: command
+    description: 清理过期的 deb 包
+    command: "pkexec apt autoclean -y"
+    safety: grey
+    confirm: "清理过期的 apt 下载包（autoclean）"
+    timeout: 60
+    on_failure: continue
+  - name: clean
+    type: command
+    description: 清理所有下载的 deb 包
+    command: "pkexec apt clean"
+    safety: grey
+    confirm: "清理所有 apt 下载包（/var/cache/apt/archives）"
+    timeout: 30
+    on_failure: continue
+  - name: autoremove
+    type: command
+    description: 清理不再需要的依赖
+    command: "pkexec apt autoremove -y"
+    safety: grey
+    confirm: "清理不再需要的依赖包（autoremove）"
+    timeout: 300
+    on_failure: continue
+  - name: show_after
+    type: command
+    description: 显示清理后缓存大小
+    command: "echo '=== 清理后缓存大小 ===' ; du -sh /var/cache/apt/archives/ 2>/dev/null"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' 'apt 缓存清理完成'"

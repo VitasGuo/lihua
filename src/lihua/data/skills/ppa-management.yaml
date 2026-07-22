@@ -1,0 +1,66 @@
+name: ppa_management
+description: PPA 个人软件包档案管理（添加/删除/查看/purge）
+version: 0.1
+category: mirror
+author: lihua
+triggers:
+  - ppa
+  - PPA
+  - 添加ppa
+  - 删除ppa
+  - 移除ppa
+  - 查看ppa
+  - ppa列表
+  - ppa管理
+examples:
+  - 添加 ppa:git-core/ppa
+  - 查看 ppa
+  - 删除 ppa:git-core/ppa
+parameters:
+  - name: action
+    required: false
+    description: 操作（添加/删除/移除/查看/列表）
+    extract: "(添加|删除|移除|查看|列表)"
+  - name: ppa
+    required: false
+    description: "PPA 名（如 git-core/ppa，可带或不带 ppa: 前缀）"
+    extract: "(?:添加|删除|移除)\\s*(?:ppa\\s+)?(.+?)\\s*$"
+steps:
+  - name: list_ppa
+    type: command
+    condition: "{{action}} == 查看 || {{action}} == 列表 || {{action}} == "
+    description: 列出已添加的 PPA
+    command: "echo '=== /etc/apt/sources.list 中的 ppa ===' ; grep -E '^deb.*ppa' /etc/apt/sources.list 2>/dev/null ; echo ; echo '=== /etc/apt/sources.list.d/ 中的 ppa ===' ; grep -rHE '^deb.*ppa' /etc/apt/sources.list.d/*.list 2>/dev/null ; echo ; echo '=== 已安装的 ppa 包 ===' ; apt list --installed 2>/dev/null | grep -i ppa"
+    safety: white
+    timeout: 15
+    on_failure: continue
+  - name: add_ppa
+    type: command
+    condition: "{{action}} == 添加 && {{ppa}} != "
+    description: 添加 PPA
+    command: "PPA=$(echo '{{ppa}}' | sed 's|^ppa:||') ; pkexec add-apt-repository -y \"ppa:$PPA\" && pkexec apt update"
+    safety: grey
+    confirm: "添加 PPA「ppa:{{ppa}}」并刷新索引"
+    timeout: 300
+    on_failure: stop
+  - name: remove_ppa
+    type: command
+    condition: "{{action}} == 删除 && {{ppa}} !=  || {{action}} == 移除 && {{ppa}} != "
+    description: 移除 PPA（保留已安装的包）
+    command: "PPA=$(echo '{{ppa}}' | sed 's|^ppa:||') ; pkexec add-apt-repository -y --remove \"ppa:$PPA\" && pkexec apt update"
+    safety: grey
+    confirm: "移除 PPA「ppa:{{ppa}}」（保留已安装的包）并刷新索引"
+    timeout: 300
+    on_failure: stop
+  - name: purge_ppa
+    type: command
+    condition: "{{action}} == 删除 && {{ppa}} != "
+    description: 彻底清理 PPA 及其安装的包（需要 ppa-purge）
+    command: "PPA=$(echo '{{ppa}}' | sed 's|^ppa:||') ; which ppa-purge >/dev/null 2>&1 && pkexec ppa-purge -y \"ppa:$PPA\" || echo 'ppa-purge 未安装，跳过 purge（可用 pkexec apt install ppa-purge 安装）'"
+    safety: grey
+    confirm: "彻底清理 PPA「ppa:{{ppa}}」及其安装的包（ppa-purge）"
+    timeout: 300
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' 'PPA 操作完成'"

@@ -1,0 +1,50 @@
+name: desktop_icon
+description: 桌面图标管理（显示/隐藏桌面图标、桌面行为）
+version: 0.1
+category: desktop
+author: lihua
+triggers:
+  - 桌面图标
+  - 显示桌面图标
+  - 隐藏桌面图标
+  - 桌面图标开关
+  - 桌面行为
+  - 显示桌面
+  - 隐藏桌面
+  - 桌面
+examples:
+  - 显示桌面图标
+  - 隐藏桌面图标
+parameters:
+  - name: action
+    required: false
+    description: 操作（show / hide / toggle）
+    extract: "(显示|隐藏|开关|开|关|切换)"
+steps:
+  - name: show_icons
+    type: command
+    condition: "{{action}} == 显示 || {{action}} == 开"
+    description: 显示桌面图标
+    command: "if gsettings list-schemas 2>/dev/null | grep -q 'org.gnome.shell.extensions.desktop-icons' ; then gsettings set org.gnome.shell.extensions.desktop-icons show-desktop true ; elif gsettings list-schemas 2>/dev/null | grep -q 'org.gnome.shell.extensions.ding' ; then gsettings set org.gnome.shell.extensions.ding show-desktop true ; fi ; echo '已显示桌面图标'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: hide_icons
+    type: command
+    condition: "{{action}} == 隐藏 || {{action}} == 关"
+    description: 隐藏桌面图标
+    command: "if gsettings list-schemas 2>/dev/null | grep -q 'org.gnome.shell.extensions.desktop-icons' ; then gsettings set org.gnome.shell.extensions.desktop-icons show-desktop false ; elif gsettings list-schemas 2>/dev/null | grep -q 'org.gnome.shell.extensions.ding' ; then gsettings set org.gnome.shell.extensions.ding show-desktop false ; fi ; echo '已隐藏桌面图标'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: show_status
+    type: command
+    condition: "{{action}} ==  || {{action}} == 切换 || {{action}} == 开关"
+    description: 显示桌面图标状态
+    command: "echo '=== 桌面图标状态 ===' ; (gsettings get org.gnome.shell.extensions.ding show-desktop 2>/dev/null && echo '（ding 扩展）') || (gsettings get org.gnome.shell.extensions.desktop-icons show-desktop 2>/dev/null && echo '（desktop-icons 扩展）') || echo '未找到桌面图标扩展'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '桌面图标设置已更新'"

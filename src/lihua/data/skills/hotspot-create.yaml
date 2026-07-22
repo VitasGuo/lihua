@@ -1,0 +1,71 @@
+name: hotspot_create
+description: 创建 / 关闭 WiFi 热点（基于 nmcli，分享网络给其他设备）
+version: 0.1
+category: network_sys
+author: lihua
+triggers:
+  - 创建热点
+  - 开热点
+  - 开启热点
+  - 创建wifi热点
+  - 创建WiFi热点
+  - 做热点
+  - 热点分享
+  - 分享网络
+  - 关闭热点
+  - 热点
+examples:
+  - 创建热点 MyHotspot
+  - 开热点
+  - 关闭热点
+parameters:
+  - name: action
+    required: false
+    description: 操作（创建 / 开启 / 开 / 关闭 / 关 / 查看）
+    extract: "(创建|开启|开|关闭|关|查看)"
+  - name: ssid
+    required: false
+    description: 热点名称（SSID）
+    extract: "(?:创建|开启|开).*?热点\\s+(.+?)\\s*$"
+  - name: password
+    required: false
+    description: 热点密码
+    extract: "(?:密码|password)\\s+(\\S+)"
+steps:
+  - name: show_devices
+    type: command
+    condition: "{{action}} == 查看 || {{action}} == "
+    description: 查看无线网卡和支持热点情况
+    command: "echo '=== 无线设备 ===' ; iw dev 2>/dev/null || echo 'iw 未安装' ; echo ; echo '=== NetworkManager 设备 ===' ; nmcli device status 2>/dev/null"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: create_hotspot
+    type: command
+    condition: "{{action}} == 创建 || {{action}} == 开启 || {{action}} == 开"
+    description: 创建并开启 WiFi 热点
+    command: "nmcli device wifi hotspot ssid '{{ssid|default:LihuaHotspot}}' password '{{password|default:12345678}}' && echo '热点已开启：SSID={{ssid|default:LihuaHotspot}}'"
+    safety: grey
+    confirm: "创建 WiFi 热点（SSID {{ssid|default:LihuaHotspot}}，密码 {{password|default:12345678}}）"
+    timeout: 30
+    on_failure: stop
+  - name: show_hotspot
+    type: command
+    condition: "{{action}} == 创建 || {{action}} == 开启 || {{action}} == 开"
+    description: 显示热点连接信息
+    command: "echo '=== 热点连接信息 ===' ; nmcli connection show --active 2>/dev/null | head -5 ; echo ; echo '=== 接入设备 ===' ; nmcli device wifi list 2>/dev/null | head -5"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: close_hotspot
+    type: command
+    condition: "{{action}} == 关闭 || {{action}} == 关"
+    description: 关闭 WiFi 热点
+    command: "WIFI_DEV=$(nmcli -t -f DEVICE,TYPE device 2>/dev/null | grep wifi | head -1 | cut -d: -f1) ; if [ -z \"$WIFI_DEV\" ] ; then echo '未找到 wifi 设备' ; exit 0 ; fi ; nmcli device disconnect \"$WIFI_DEV\" && echo '热点已关闭'"
+    safety: grey
+    confirm: "关闭热点（断开 wifi 设备）"
+    timeout: 15
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '热点操作完成'"

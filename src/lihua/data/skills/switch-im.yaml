@@ -1,0 +1,95 @@
+name: switch_im
+description: 切换输入法（IBus ↔ Fcitx5）
+version: 0.1
+category: mvp
+author: lihua
+triggers:
+  - 切换输入法
+  - 换输入法
+  - 切换ibus
+  - 切换fcitx
+  - 切换fcitx5
+  - 把输入法换成
+  - 输入法换成
+  - 换成fcitx
+  - 换成fcitx5
+  - 换成ibus
+  - 用fcitx
+  - 用fcitx5
+  - 用ibus
+  - 启用fcitx
+  - 启用ibus
+  - 切换到
+  - switch input method
+examples:
+  - 把输入法换成 fcitx5
+  - 切换到 ibus
+  - 用 fcitx5
+parameters:
+  - name: target
+    required: true
+    description: 目标输入法（fcitx5 / ibus）
+    extract: "(?:切换到|换成|改成|用|启用|切换|换成|换|用)\\s*(?:输入法)?\\s*(fcitx5|fcitx|ibus|IBus|Fcitx5|Fcitx|IBUS)"
+    default: "fcitx5"
+steps:
+  - name: detect_target
+    type: set_var
+    description: 规范化目标输入法名
+    vars:
+      target_normalized: "{{target}}"
+  - name: install_fcitx5
+    type: command
+    condition: "{{target_normalized}} == fcitx5"
+    command: "which fcitx5 || pkexec apt install -y fcitx5 fcitx5-config-qt fcitx5-chinese-addons"
+    safety: grey
+    confirm: "安装 fcitx5 输入法框架（需要管理员权限）"
+    timeout: 300
+    on_failure: stop
+  - name: install_ibus
+    type: command
+    condition: "{{target_normalized}} == ibus"
+    command: "which ibus || pkexec apt install -y ibus ibus-clutter ibus-gtk ibus-gtk3 ibus-libs"
+    safety: grey
+    confirm: "安装 IBus 输入法框架（需要管理员权限）"
+    timeout: 300
+    on_failure: stop
+  - name: set_env_im_module
+    type: command
+    description: 设置 GTK_IM_MODULE / QT_IM_MODULE / XMODIFIERS
+    condition: "{{target_normalized}} == fcitx5"
+    command: "grep -q 'GTK_IM_MODULE=fcitx' ~/.profile || echo -e 'export GTK_IM_MODULE=fcitx\\nexport QT_IM_MODULE=fcitx\\nexport XMODIFIERS=@im=fcitx' >> ~/.profile"
+    safety: white
+    on_failure: continue
+  - name: set_env_im_module_ibus
+    type: command
+    condition: "{{target_normalized}} == ibus"
+    command: "grep -q 'GTK_IM_MODULE=ibus' ~/.profile || echo -e 'export GTK_IM_MODULE=ibus\\nexport QT_IM_MODULE=ibus\\nexport XMODIFIERS=@im=ibus' >> ~/.profile"
+    safety: white
+    on_failure: continue
+  - name: enable_im_systemd
+    type: command
+    description: 启用 systemd user service（fcitx5 用 Restart=always，见 traps T001）
+    condition: "{{target_normalized}} == fcitx5"
+    command: "systemctl --user enable fcitx5.service 2>/dev/null; systemctl --user start fcitx5.service 2>/dev/null; true"
+    safety: white
+    on_failure: continue
+  - name: restart_im
+    type: command
+    condition: "{{target_normalized}} == fcitx5"
+    command: "fcitx5 -r -d 2>/dev/null &"
+    safety: white
+    on_failure: continue
+  - name: restart_im_ibus
+    type: command
+    condition: "{{target_normalized}} == ibus"
+    command: "ibus restart 2>/dev/null; ibus-daemon -drx 2>/dev/null &"
+    safety: white
+    on_failure: continue
+  - name: verify
+    type: verify
+    description: 检查输入法进程
+    command: "pgrep -x {{target_normalized}} || pgrep -f {{target_normalized}}"
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '输入法已切换到 {{target_normalized}}（注销后生效）'"

@@ -1,0 +1,76 @@
+name: gnome_extension
+description: GNOME 扩展管理（查看 / 启用 / 禁用 / 安装 / 卸载）
+version: 0.1
+category: desktop_hw
+author: lihua
+triggers:
+  - gnome扩展
+  - gnome插件
+  - gnome extension
+  - 安装扩展
+  - 卸载扩展
+  - 启用扩展
+  - 禁用扩展
+  - 查看扩展
+  - 扩展列表
+  - 扩展管理
+examples:
+  - 查看gnome扩展
+  - 启用扩展 dash-to-dock
+  - 禁用扩展 dash-to-dock
+parameters:
+  - name: action
+    required: false
+    description: 操作（查看 / 列表 / 启用 / 禁用 / 安装 / 卸载）
+    extract: "(安装|卸载|启用|禁用|查看|列表)"
+  - name: extension
+    required: false
+    description: 扩展名
+    extract: "(?:安装|卸载|启用|禁用)\\s+(?:扩展\\s+|插件\\s+)?(.+?)\\s*$"
+steps:
+  - name: list_all
+    type: command
+    condition: "{{action}} == 查看 || {{action}} == 列表 || {{action}} == "
+    description: 列出所有已安装的 GNOME 扩展
+    command: "echo '=== 已安装的 GNOME 扩展 ===' ; gnome-extensions list 2>/dev/null || echo 'gnome-extensions 命令不可用'"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: list_enabled
+    type: command
+    condition: "{{action}} == 查看 || {{action}} == 列表 || {{action}} == "
+    description: 列出已启用的 GNOME 扩展
+    command: "echo '=== 已启用的 GNOME 扩展 ===' ; gnome-extensions list --enabled 2>/dev/null || echo 'gnome-extensions 命令不可用'"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: enable_extension
+    type: command
+    condition: "{{action}} == 启用 && {{extension}} != "
+    description: 启用 GNOME 扩展
+    command: "gnome-extensions enable '{{extension}}' 2>/dev/null && echo '已启用扩展 {{extension}}' || echo '启用失败：扩展 {{extension}} 不存在或未安装'"
+    safety: grey
+    confirm: "启用 GNOME 扩展 {{extension}}"
+    timeout: 10
+    on_failure: continue
+  - name: disable_extension
+    type: command
+    condition: "{{action}} == 禁用 && {{extension}} != "
+    description: 禁用 GNOME 扩展
+    command: "gnome-extensions disable '{{extension}}' 2>/dev/null && echo '已禁用扩展 {{extension}}' || echo '禁用失败：扩展 {{extension}} 不存在或未安装'"
+    safety: grey
+    confirm: "禁用 GNOME 扩展 {{extension}}"
+    timeout: 10
+    on_failure: continue
+  - name: install_hint
+    type: command
+    condition: "{{action}} == 安装"
+    description: 提示用户去网页安装扩展
+    command: "echo 'GNOME 扩展需要通过网页安装：' ; echo '  https://extensions.gnome.org' ; echo ; echo '搜索 {{extension}} 后点击安装开关即可（需浏览器 GNOME Shell 集成插件）' ; echo '安装后可用「查看gnome扩展」确认，用「启用扩展 <名称>」启用'"
+    safety: grey
+    confirm: "提示安装 {{extension}}（需手动访问 extensions.gnome.org）"
+    timeout: 5
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' 'GNOME 扩展操作完成'"

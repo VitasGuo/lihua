@@ -1,0 +1,60 @@
+name: file_backup
+description: 文件备份（rsync 增量同步，保留权限和软链接）
+version: 0.1
+category: file_adv
+author: lihua
+triggers:
+  - 备份文件
+  - 文件备份
+  - 备份目录
+  - 备份文件夹
+  - 备份到
+  - rsync备份
+  - 同步备份
+  - 备份一下
+examples:
+  - 备份文件 /home/user/docs 到 /mnt/backup
+  - 备份目录 ~/projects 到 /backup
+parameters:
+  - name: source
+    required: true
+    description: 源文件或目录路径
+    extract: "(?:备份|同步备份|备份一下|rsync备份)\\s+(?:文件\\s+|目录\\s+|文件夹\\s+)?(.+?)\\s+到"
+  - name: target
+    required: true
+    description: 目标路径
+    extract: "到\\s+(.+?)\\s*$"
+steps:
+  - name: check_source
+    type: command
+    description: 检查源路径是否存在
+    command: "ls -ld '{{source}}'"
+    safety: white
+    timeout: 5
+    on_failure: stop
+  - name: make_target
+    type: command
+    description: 创建目标目录
+    command: "mkdir -p '{{target}}'"
+    safety: grey
+    confirm: "创建目标目录 {{target}}"
+    timeout: 10
+    on_failure: stop
+  - name: backup
+    type: command
+    description: 用 rsync 增量备份（保留权限、软链接、时间戳）
+    command: "rsync -av --progress '{{source}}' '{{target}}'"
+    safety: grey
+    confirm: "备份 {{source}} 到 {{target}}"
+    timeout: 600
+    on_failure: stop
+  - name: show_result
+    type: command
+    description: 显示备份结果大小
+    command: "du -sh '{{target}}'"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '备份完成：{{source}} → {{target}}'"

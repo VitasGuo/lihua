@@ -1,0 +1,97 @@
+name: service_manager
+description: 管理系统服务（查看/启动/停止/重启/开机自启）
+version: 0.1
+category: system
+author: lihua
+triggers:
+  - 服务
+  - 服务管理
+  - 系统服务
+  - 启动服务
+  - 停止服务
+  - 重启服务
+  - 开机启动
+  - 开机自启
+  - 禁止开机启动
+  - 服务状态
+  - 查看服务
+  - systemctl
+  - service
+examples:
+  - 查看服务
+  - 重启 nginx 服务
+  - 启动 docker 服务
+parameters:
+  - name: action
+    required: true
+    description: 操作（status/start/stop/restart/enable/disable/list）
+    extract: "(?:查看|看下|查下|显示)?\\s*(?:服务)?\\s*(\\w+)\\s*$|(?:启动|开启|start)\\s+(?:服务\\s+)?(\\w+)|(?:停止|关闭|stop)\\s+(?:服务\\s+)?(\\w+)|(?:重启|restart)\\s+(?:服务\\s+)?(\\w+)|(?:开机启动|开机自启|enable)\\s+(?:服务\\s+)?(\\w+)|(?:禁止开机|disable)\\s+(?:服务\\s+)?(\\w+)"
+  - name: service_name
+    required: false
+    description: 服务名（如 nginx/docker/ssh）
+    extract: "(?:nginx|docker|ssh|sshd|mysql|postgresql|redis|apache2|httpd|networking|network-manager|cron|udev|rsyslog|syslog|systemd-resolved|systemd-networkd|cups|bluetooth|gdm|lightdm|sddm|lldm|firewalld|ufw|snapd|flatpak|v2ray|xray|clash|trojan|shadowsocks|frps|frpc|openvpn|wireguard|wg-quick|nginx-full|php-fpm|php8\\.[0-9]-fpm|mariadb|mongodb|elasticsearch|kibana|logstash|grafana|prometheus|node_exporter|blackbox_exporter|consul|etcd|zookeeper|kafka|rabbitmq|minio|ceph|nfs-kernel-server|smbd|nmbd|wsdd|avahi-daemon|cups-browsed|saned|rpcbind|nfs-common|autofs|fstrim.timer|mlocate\\.timer)"
+steps:
+  - name: list_services
+    type: command
+    condition: "{{action}} == list || {{service_name}} == "
+    description: 列出所有系统服务
+    command: "systemctl list-units --type=service --state=running --no-pager | head -30"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: status
+    type: command
+    condition: "{{action}} == status && {{service_name}} != "
+    description: 查看服务状态
+    command: "systemctl status {{service_name}} --no-pager"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: start
+    type: command
+    condition: "{{action}} == start && {{service_name}} != "
+    description: 启动服务
+    command: "pkexec systemctl start {{service_name}}"
+    safety: grey
+    confirm: "启动系统服务 {{service_name}}"
+    timeout: 30
+    on_failure: stop
+  - name: stop
+    type: command
+    condition: "{{action}} == stop && {{service_name}} != "
+    description: 停止服务
+    command: "pkexec systemctl stop {{service_name}}"
+    safety: grey
+    confirm: "停止系统服务 {{service_name}}"
+    timeout: 30
+    on_failure: stop
+  - name: restart
+    type: command
+    condition: "{{action}} == restart && {{service_name}} != "
+    description: 重启服务
+    command: "pkexec systemctl restart {{service_name}}"
+    safety: grey
+    confirm: "重启系统服务 {{service_name}}"
+    timeout: 60
+    on_failure: stop
+  - name: enable
+    type: command
+    condition: "{{action}} == enable && {{service_name}} != "
+    description: 设置开机自启
+    command: "pkexec systemctl enable {{service_name}}"
+    safety: grey
+    confirm: "设置 {{service_name}} 开机自启"
+    timeout: 10
+    on_failure: continue
+  - name: disable
+    type: command
+    condition: "{{action}} == disable && {{service_name}} != "
+    description: 禁止开机自启
+    command: "pkexec systemctl disable {{service_name}}"
+    safety: grey
+    confirm: "禁止 {{service_name}} 开机自启"
+    timeout: 10
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '服务操作完成'"

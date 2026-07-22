@@ -1,0 +1,76 @@
+name: screen_record
+description: 屏幕录制（X11 / Wayland，输出到 ~/Videos/）
+version: 0.1
+category: media_dev
+author: lihua
+triggers:
+  - 录屏
+  - 屏幕录制
+  - 录制屏幕
+  - 录视频
+  - 录制视频
+  - 录一下屏幕
+  - 开始录屏
+  - 停止录屏
+  - screenshot video
+examples:
+  - 录屏
+  - 开始录屏
+  - 停止录屏
+parameters:
+  - name: action
+    required: false
+    description: 操作（开始 / 停止 / 暂停 / 继续）
+    extract: "(开始|停止|暂停|继续)"
+steps:
+  - name: check_tools
+    type: command
+    description: 检查录屏工具是否安装
+    command: "which ffmpeg gnome-screenshot grim"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: ensure_dir
+    type: command
+    description: 确保录像目录存在
+    command: "mkdir -p ~/Videos"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: start_record_x11
+    type: command
+    condition: "{{action}} == 开始 || {{action}} == "
+    description: 开始录屏（X11，ffmpeg 抓取 :0.0）
+    command: "nohup ffmpeg -f x11grab -framerate 25 -i :0.0 -c:v libx264 ~/Videos/lihua-record-$(date +%Y%m%d-%H%M%S).mp4 >/dev/null 2>&1 & echo \"录屏已启动，PID=$!\""
+    safety: grey
+    confirm: "开始录屏到 ~/Videos/"
+    timeout: 10
+    on_failure: continue
+  - name: start_record_wayland
+    type: command
+    condition: "{{action}} == 开始 || {{action}} == "
+    description: Wayland 环境使用 wf-recorder（若已安装）
+    command: "if command -v wf-recorder >/dev/null 2>&1 ; then nohup wf-recorder -f ~/Videos/lihua-record-$(date +%Y%m%d-%H%M%S).mp4 >/dev/null 2>&1 & echo \"wf-recorder 已启动，PID=$!\" ; else echo 'wf-recorder 未安装，已尝试 ffmpeg x11grab' ; fi"
+    safety: grey
+    confirm: "尝试 Wayland 录屏（wf-recorder）"
+    timeout: 10
+    on_failure: continue
+  - name: stop_record
+    type: command
+    condition: "{{action}} == 停止"
+    description: 停止录屏
+    command: "pkill -INT ffmpeg 2>/dev/null ; pkill -INT wf-recorder 2>/dev/null ; echo '录屏已停止'"
+    safety: grey
+    confirm: "停止所有录屏进程"
+    timeout: 10
+    on_failure: continue
+  - name: list_records
+    type: command
+    description: 显示最近的录像文件
+    command: "ls -la ~/Videos/lihua-record-* 2>/dev/null | tail -5"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '录屏操作完成（保存到 ~/Videos/）'"

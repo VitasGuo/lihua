@@ -1,0 +1,82 @@
+name: docker_run
+description: Docker 容器管理（查看 / 拉取镜像 / 运行 / 停止容器）
+version: 0.1
+category: media_dev
+author: lihua
+triggers:
+  - 运行docker
+  - docker运行
+  - 启动容器
+  - docker启动
+  - 拉取镜像
+  - docker拉取
+  - docker pull
+  - docker run
+  - 运行容器
+  - docker容器
+examples:
+  - 运行docker nginx
+  - docker拉取 ubuntu
+parameters:
+  - name: action
+    required: false
+    description: 操作（运行 / 启动 / 拉取 / 停止 / 查看 / 列表）
+    extract: "(运行|启动|拉取|停止|查看|列表)"
+  - name: image
+    required: false
+    description: Docker 镜像名
+    extract: "(?:运行|启动|拉取)\\s+(?:docker\\s+)?(?:容器\\s+|镜像\\s+)?(.+?)\\s*$"
+steps:
+  - name: check_docker
+    type: command
+    description: 检查 docker 是否安装
+    command: "which docker && docker --version"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: list_containers
+    type: command
+    condition: "{{action}} == 查看 || {{action}} == 列表"
+    description: 查看所有容器
+    command: "echo '=== 所有容器 ===' ; docker ps -a"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: list_images
+    type: command
+    condition: "{{action}} == 查看 || {{action}} == 列表"
+    description: 查看所有镜像
+    command: "echo '=== 本地镜像 ===' ; docker images"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: pull_image
+    type: command
+    condition: "{{action}} == 拉取 && {{image}} != "
+    description: 拉取 Docker 镜像
+    command: "docker pull {{image}}"
+    safety: grey
+    confirm: "拉取 Docker 镜像 {{image}}"
+    timeout: 600
+    on_failure: continue
+  - name: run_container
+    type: command
+    condition: "{{action}} == 运行 && {{image}} != "
+    description: 后台运行 Docker 容器
+    command: "docker run -d --name {{image}}-lihua {{image}}"
+    safety: grey
+    confirm: "运行 Docker 容器 {{image}}"
+    timeout: 120
+    on_failure: continue
+  - name: stop_container
+    type: command
+    condition: "{{action}} == 停止 && {{image}} != "
+    description: 停止 Docker 容器
+    command: "docker stop {{image}}"
+    safety: grey
+    confirm: "停止 Docker 容器 {{image}}"
+    timeout: 60
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' 'Docker 操作完成'"

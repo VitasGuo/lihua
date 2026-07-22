@@ -1,0 +1,73 @@
+name: battery
+description: 电池管理（电量 / 状态 / 健康度 / 省电模式）
+version: 0.1
+category: process
+author: lihua
+triggers:
+  - 电池
+  - 电量
+  - 看电量
+  - 查看电量
+  - 电池状态
+  - 电池信息
+  - 电池健康
+  - 电池寿命
+  - 省电
+  - 省电模式
+  - 性能模式
+  - 平衡模式
+  - 电源模式
+  - 电源
+examples:
+  - 看电量
+  - 切换省电模式
+  - 电池健康度
+parameters:
+  - name: action
+    required: false
+    description: 操作（show / power-saver / balanced / performance）
+    extract: "(省电|性能|平衡|健康|状态|信息)"
+steps:
+  - name: show_battery
+    type: command
+    condition: "{{action}} ==  || {{action}} == 状态 || {{action}} == 信息"
+    description: 显示电池状态
+    command: "echo '=== 电池状态 ===' ; upower -i $(upower -e | grep -i 'BAT' | head -1) 2>/dev/null | grep -E 'state|percentage|energy|voltage|time|capacity|vendor|model' ; echo ; echo '=== 简要 ===' ; cat /sys/class/power_supply/BAT0/capacity 2>/dev/null && echo '%' ; cat /sys/class/power_supply/BAT0/status 2>/dev/null"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: battery_health
+    type: command
+    condition: "{{action}} == 健康"
+    description: 电池健康度
+    command: "echo '=== 电池健康度 ===' ; ENERGY_FULL=$(cat /sys/class/power_supply/BAT0/energy_full 2>/dev/null) ; ENERGY_FULL_DESIGN=$(cat /sys/class/power_supply/BAT0/energy_full_design 2>/dev/null) ; if [ -n \"$ENERGY_FULL\" ] && [ -n \"$ENERGY_FULL_DESIGN\" ] && [ \"$ENERGY_FULL_DESIGN\" -gt 0 ] ; then HEALTH=$(echo \"scale=1; $ENERGY_FULL * 100 / $ENERGY_FULL_DESIGN\" | bc) ; echo \"健康度：${HEALTH}%\" ; echo \"当前满电容量：${ENERGY_FULL} uWh\" ; echo \"设计容量：${ENERGY_FULL_DESIGN} uWh\" ; else upower -i $(upower -e | grep -i BAT | head -1) 2>/dev/null | grep -E 'capacity|energy-full' ; fi"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: power_saver
+    type: command
+    condition: "{{action}} == 省电"
+    description: 切换到省电模式
+    command: "gdbus call --session --dest org.gnome.SessionManager --object-path /org/gnome/SessionManager/Power --method org.gnome.SessionManager.Power.SetPowerMode 'power-saver' 2>/dev/null || (powerprofilesctl set power-saver 2>/dev/null && echo '已切换到省电模式')"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: power_balanced
+    type: command
+    condition: "{{action}} == 平衡"
+    description: 切换到平衡模式
+    command: "gdbus call --session --dest org.gnome.SessionManager --object-path /org/gnome/SessionManager/Power --method org.gnome.SessionManager.Power.SetPowerMode 'balanced' 2>/dev/null || (powerprofilesctl set balanced 2>/dev/null && echo '已切换到平衡模式')"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: power_performance
+    type: command
+    condition: "{{action}} == 性能"
+    description: 切换到性能模式
+    command: "gdbus call --session --dest org.gnome.SessionManager --object-path /org/gnome/SessionManager/Power --method org.gnome.SessionManager.Power.SetPowerMode 'performance' 2>/dev/null || (powerprofilesctl set performance 2>/dev/null && echo '已切换到性能模式')"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '电池/电源操作完成'"

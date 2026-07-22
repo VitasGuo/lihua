@@ -1,0 +1,67 @@
+name: night_light
+description: 夜灯 / 护眼模式（色温调节）
+version: 0.1
+category: desktop
+author: lihua
+triggers:
+  - 夜灯
+  - 护眼模式
+  - 护眼
+  - 夜间模式
+  - 黄光
+  - 暖光
+  - 蓝光
+  - 防蓝光
+  - 开夜灯
+  - 关夜灯
+  - 色温
+  - 改色温
+examples:
+  - 打开夜灯
+  - 关闭夜灯
+  - 改色温 3000
+parameters:
+  - name: action
+    required: false
+    description: 操作（on / off / set_temp）
+    extract: "(打开|开启|开|关闭|关|色温)"
+  - name: temperature
+    required: false
+    description: 色温值（K）
+    extract: "(\\d{3,5})\\s*K?"
+steps:
+  - name: night_on
+    type: command
+    condition: "{{action}} == 打开 || {{action}} == 开启 || {{action}} == 开"
+    description: 打开夜灯
+    command: "gsettings set org.gnome.settings-daemon.plugins.color night-light-enabled true && echo '夜灯已开启'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: night_off
+    type: command
+    condition: "{{action}} == 关闭 || {{action}} == 关"
+    description: 关闭夜灯
+    command: "gsettings set org.gnome.settings-daemon.plugins.color night-light-enabled false && echo '夜灯已关闭'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: set_temp
+    type: command
+    condition: "{{action}} == 色温 && {{temperature}} != "
+    description: 设置夜灯色温
+    command: "gsettings set org.gnome.settings-daemon.plugins.color night-light-temperature {{temperature}} && gsettings set org.gnome.settings-daemon.plugins.color night-light-enabled true && echo '色温已设为 {{temperature}}K'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: show_status
+    type: command
+    condition: "{{action}} ==  || {{action}} == 色温 && {{temperature}} == "
+    description: 显示夜灯状态
+    command: "echo '=== 夜灯状态 ===' ; gsettings get org.gnome.settings-daemon.plugins.color night-light-enabled ; echo '=== 色温 ===' ; gsettings get org.gnome.settings-daemon.plugins.color night-light-temperature ; echo '=== 日程 ===' ; gsettings get org.gnome.settings-daemon.plugins.color night-light-schedule-from ; gsettings get org.gnome.settings-daemon.plugins.color night-light-schedule-to"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '夜灯设置已更新'"

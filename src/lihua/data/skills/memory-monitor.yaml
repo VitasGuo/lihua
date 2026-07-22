@@ -1,0 +1,55 @@
+name: memory_monitor
+description: 内存监控（使用率 / swap / 内存占用最高的进程）
+version: 0.1
+category: process
+author: lihua
+triggers:
+  - 内存使用
+  - 内存使用率
+  - 看内存
+  - 查看内存
+  - 内存占用
+  - 内存情况
+  - 内存信息
+  - 内存监控
+  - 监控内存
+  - swap 使用
+  - 交换分区
+  - 内存够不够
+  - 内存
+examples:
+  - 看内存使用
+  - 内存占用情况
+parameters: []
+steps:
+  - name: mem_usage
+    type: command
+    description: 内存使用情况（人类可读）
+    command: "echo '=== 内存使用 ===' ; free -h ; echo ; echo '=== 详细内存 ===' ; cat /proc/meminfo | head -10"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: swap_usage
+    type: command
+    description: Swap 使用情况
+    command: "echo '=== Swap 使用 ===' ; swapon --show 2>/dev/null ; echo ; echo '=== Swap 详情 ===' ; cat /proc/swaps"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: top_mem_processes
+    type: command
+    description: 内存占用最高的进程
+    command: "echo '=== Top 10 内存进程 ===' ; ps -eo pid,user,pcpu,pmem,rss,comm --sort=-rss | head -11 | awk '{printf \"%-8s %-10s %5s%% %5s%% %10s KB  %s\\n\", $1,$2,$3,$4,$5,$6}'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: mem_pressure
+    type: command
+    description: 内存压力
+    command: "echo '=== 内存压力 ===' ; cat /proc/pressure/memory 2>/dev/null || echo '无内存压力信息' ; echo ; echo '=== OOM 计分（前 5）===' ; ps -eo pid,oom_score,comm --sort=-oom_score 2>/dev/null | head -6"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '内存监控信息已显示'"

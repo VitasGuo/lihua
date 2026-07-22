@@ -1,0 +1,64 @@
+name: pdf_merge_split
+description: PDF 合并 / 拆分 / 分割（基于 poppler-utils 的 pdfunite / pdfseparate）
+version: 0.1
+category: media_dev
+author: lihua
+triggers:
+  - 合并pdf
+  - pdf合并
+  - 拆分pdf
+  - pdf拆分
+  - 分割pdf
+  - pdf分割
+  - 合并PDF
+  - 拆分PDF
+  - pdf操作
+  - pdf处理
+examples:
+  - 合并pdf
+  - 拆分pdf report.pdf
+parameters:
+  - name: action
+    required: false
+    description: 操作（合并 / 拆分 / 分割）
+    extract: "(合并|拆分|分割)"
+  - name: files
+    required: false
+    description: PDF 文件（合并时多个用空格分隔，拆分时为单个文件）
+    extract: "(?:合并|拆分|分割)\\s+(?:pdf\\s+|PDF\\s+)?(.+?)\\s*$"
+steps:
+  - name: check_tools
+    type: command
+    description: 检查 PDF 工具是否安装
+    command: "which pdfunite pdftk qpdf pdfseparate"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: merge
+    type: command
+    condition: "{{action}} == 合并"
+    description: 合并 PDF 文件
+    command: "pdfunite {{files}} merged.pdf && echo '已合并为 merged.pdf'"
+    safety: grey
+    confirm: "合并 PDF 文件为 merged.pdf"
+    timeout: 120
+    on_failure: continue
+  - name: split
+    type: command
+    condition: "{{action}} == 拆分 || {{action}} == 分割"
+    description: 拆分 PDF 为单页
+    command: "pdfseparate {{files}} page-%d.pdf && echo '已拆分为 page-*.pdf'"
+    safety: grey
+    confirm: "拆分 PDF {{files}} 为单页"
+    timeout: 120
+    on_failure: continue
+  - name: show_result
+    type: command
+    description: 显示当前目录下的 PDF 文件
+    command: "ls -la *.pdf 2>/dev/null | tail -10"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' 'PDF 操作完成'"

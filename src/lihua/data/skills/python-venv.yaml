@@ -1,0 +1,55 @@
+name: python_venv
+description: Python 虚拟环境管理（创建 / 激活 / 退出 / 查看）
+version: 0.1
+category: media_dev
+author: lihua
+triggers:
+  - 创建venv
+  - python虚拟环境
+  - 创建虚拟环境
+  - venv创建
+  - python venv
+  - 激活venv
+  - 退出venv
+  - python环境
+examples:
+  - 创建venv myenv
+  - 创建虚拟环境
+parameters:
+  - name: action
+    required: false
+    description: 操作（创建 / 激活 / 退出 / 查看 / 列表）
+    extract: "(创建|激活|退出|查看|列表)"
+  - name: name
+    required: false
+    description: 虚拟环境名称
+    extract: "(?:创建|激活|退出)\\s+(?:venv\\s+|虚拟环境\\s+)?(.+?)\\s*$"
+steps:
+  - name: list_envs
+    type: command
+    condition: "{{action}} == 查看 || {{action}} == 列表"
+    description: 查看已有的虚拟环境
+    command: "echo '=== ~/.local/share/virtualenvs/ ===' ; ls ~/.local/share/virtualenvs/ 2>/dev/null ; echo '=== 当前目录下的 venv ===' ; ls -d */venv 2>/dev/null"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: create_venv
+    type: command
+    condition: "{{action}} == 创建 || {{action}} == "
+    description: 创建 Python 虚拟环境
+    command: "python3 -m venv {{name|default:venv}} && echo '已创建虚拟环境：{{name|default:venv}}'"
+    safety: grey
+    confirm: "创建 Python 虚拟环境 {{name|default:venv}}"
+    timeout: 60
+    on_failure: continue
+  - name: show_activate
+    type: command
+    condition: "{{action}} == 创建 || {{action}} == "
+    description: 显示激活命令
+    command: "echo '激活：source {{name|default:venv}}/bin/activate'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' 'Python 虚拟环境操作完成'"

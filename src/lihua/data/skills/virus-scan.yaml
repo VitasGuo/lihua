@@ -1,0 +1,66 @@
+name: virus_scan
+description: 病毒扫描（ClamAV：安装 / 更新病毒库 / 扫描文件）
+version: 0.1
+category: desktop_hw
+author: lihua
+triggers:
+  - 病毒扫描
+  - 扫描病毒
+  - 杀毒
+  - 杀毒软件
+  - clamav
+  - 扫描文件
+  - 安全扫描
+  - 查病毒
+  - 病毒检测
+examples:
+  - 扫描病毒
+  - 扫描文件 /home
+parameters:
+  - name: action
+    required: false
+    description: 操作（扫描 / 安装 / 更新 / 查看）
+    extract: "(扫描|安装|更新|查看)"
+  - name: path
+    required: false
+    description: 扫描路径
+    extract: "扫描\\s+(.+?)\\s*$"
+steps:
+  - name: check_clamav
+    type: command
+    condition: "{{action}} == 查看 || {{action}} == "
+    description: 检查 ClamAV 是否安装
+    command: "echo '=== ClamAV 工具检测 ===' ; for cmd in clamscan freshclam clamd ; do if command -v $cmd > /dev/null 2>&1 ; then echo \"✓ $cmd ($(which $cmd))\" ; else echo \"✗ $cmd 未安装\" ; fi ; done ; echo ; echo '提示：用「安装杀毒软件」安装 ClamAV'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: install_clamav
+    type: command
+    condition: "{{action}} == 安装"
+    description: 安装 ClamAV
+    command: "pkexec apt install -y clamav clamav-daemon"
+    safety: grey
+    confirm: "安装 ClamAV 病毒扫描软件（apt）"
+    timeout: 300
+    on_failure: continue
+  - name: update_db
+    type: command
+    condition: "{{action}} == 更新"
+    description: 更新病毒库
+    command: "pkexec freshclam"
+    safety: grey
+    confirm: "更新 ClamAV 病毒库（freshclam）"
+    timeout: 600
+    on_failure: continue
+  - name: scan
+    type: command
+    condition: "{{action}} == 扫描"
+    description: 扫描病毒
+    command: "clamscan -r --bell -i '{{path|default:.}}'"
+    safety: grey
+    confirm: "扫描 {{path|default:当前目录}} 病毒"
+    timeout: 3600
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '病毒扫描操作完成'"

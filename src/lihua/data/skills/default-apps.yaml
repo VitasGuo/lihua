@@ -1,0 +1,105 @@
+name: default_apps
+description: 默认应用程序管理（设默认浏览器/编辑器/播放器等）
+version: 0.1
+category: app
+author: lihua
+triggers:
+  - 默认应用
+  - 默认程序
+  - 默认浏览器
+  - 默认编辑器
+  - 默认播放器
+  - 默认邮件
+  - 设默认
+  - 改默认
+  - 默认软件
+  - 默认打开方式
+  - 默认
+  - xdg-mime
+examples:
+  - 设默认浏览器 firefox
+  - 默认编辑器 code
+parameters:
+  - name: category
+    required: false
+    description: 类别（browser / editor / player / mail / terminal / image）
+    extract: "(浏览器|编辑器|播放器|邮件|终端|图片|video|browser|editor|player|mail|terminal|image)"
+  - name: app
+    required: false
+    description: 应用名或 .desktop 文件名
+    extract: "(?:浏览器|编辑器|播放器|邮件|终端|图片|默认)\\s+(.+?)\\s*$"
+steps:
+  - name: show_defaults
+    type: command
+    condition: "{{category}} ==  || {{app}} == "
+    description: 显示当前默认应用
+    command: "echo '=== 默认浏览器 ===' ; xdg-settings get default-web-browser 2>/dev/null ; echo '=== 默认文本编辑器 ===' ; xdg-mime query default text/plain 2>/dev/null ; echo '=== 默认文件管理器 ===' ; xdg-mime query default inode/directory 2>/dev/null ; echo '=== 默认图片查看器 ===' ; xdg-mime query default image/jpeg 2>/dev/null ; echo '=== 默认视频播放器 ===' ; xdg-mime query default video/mp4 2>/dev/null ; echo '=== 默认音频播放器 ===' ; xdg-mime query default audio/mpeg 2>/dev/null ; echo '=== 默认 PDF 查看器 ===' ; xdg-mime query default application/pdf 2>/dev/null ; echo '=== 默认邮件客户端 ===' ; xdg-mime query default x-scheme-handler/mailto 2>/dev/null"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: set_browser
+    type: command
+    condition: "{{category}} == 浏览器 || {{category}} == browser"
+    description: 设置默认浏览器
+    command: "xdg-settings set default-web-browser '{{app|default:firefox.desktop}}'"
+    safety: grey
+    confirm: "设置默认浏览器为 {{app|default:firefox.desktop}}"
+    timeout: 5
+    on_failure: continue
+  - name: set_editor
+    type: command
+    condition: "{{category}} == 编辑器 || {{category}} == editor"
+    description: 设置默认文本编辑器
+    command: "xdg-mime default '{{app|default:gedit.desktop}}' text/plain text/plain"
+    safety: grey
+    confirm: "设置默认文本编辑器为 {{app|default:gedit.desktop}}"
+    timeout: 5
+    on_failure: continue
+  - name: set_file_manager
+    type: command
+    condition: "{{category}} == 文件 || {{category}} == file"
+    description: 设置默认文件管理器
+    command: "xdg-mime default '{{app|default:org.gnome.Nautilus.desktop}}' inode/directory"
+    safety: grey
+    confirm: "设置默认文件管理器为 {{app|default:org.gnome.Nautilus.desktop}}"
+    timeout: 5
+    on_failure: continue
+  - name: set_image_viewer
+    type: command
+    condition: "{{category}} == 图片 || {{category}} == image"
+    description: 设置默认图片查看器
+    command: "xdg-mime default '{{app|default:eog.desktop}}' image/jpeg image/png image/gif image/bmp"
+    safety: grey
+    confirm: "设置默认图片查看器为 {{app|default:eog.desktop}}"
+    timeout: 5
+    on_failure: continue
+  - name: set_video_player
+    type: command
+    condition: "{{category}} == 播放器 || {{category}} == player || {{category}} == video"
+    description: 设置默认视频播放器
+    command: "xdg-mime default '{{app|default:totem.desktop}}' video/mp4 video/x-matroska video/x-msvideo"
+    safety: grey
+    confirm: "设置默认视频播放器为 {{app|default:totem.desktop}}"
+    timeout: 5
+    on_failure: continue
+  - name: set_mail
+    type: command
+    condition: "{{category}} == 邮件 || {{category}} == mail"
+    description: 设置默认邮件客户端
+    command: "xdg-mime default '{{app|default:org.gnome.Geary.desktop}}' x-scheme-handler/mailto"
+    safety: grey
+    confirm: "设置默认邮件客户端为 {{app|default:org.gnome.Geary.desktop}}"
+    timeout: 5
+    on_failure: continue
+  - name: set_terminal
+    type: command
+    condition: "{{category}} == 终端 || {{category}} == terminal"
+    description: 设置默认终端
+    command: "if command -v update-alternatives >/dev/null 2>&1 ; then pkexec update-alternatives --set x-terminal-emulator \"$(command -v {{app|default:gnome-terminal}})\" ; else gsettings set org.gnome.desktop.default-apps.terminal exec '{{app|default:gnome-terminal}}' ; fi"
+    safety: grey
+    confirm: "设置默认终端为 {{app|default:gnome-terminal}}"
+    timeout: 10
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '默认应用已更新'"

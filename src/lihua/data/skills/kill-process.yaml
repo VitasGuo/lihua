@@ -1,0 +1,61 @@
+name: kill_process
+description: 终止进程（按 PID / 名称 / 端口）
+version: 0.1
+category: process
+author: lihua
+triggers:
+  - 杀进程
+  - 杀掉进程
+  - 终止进程
+  - 结束进程
+  - 停止进程
+  - 关闭进程
+  - kill 进程
+  - kill
+  - 杀
+  - 干掉
+  - 关掉进程
+examples:
+  - 杀进程 nginx
+  - 杀掉 PID 1234
+  - 终止占用 8080 端口的进程
+parameters:
+  - name: target
+    required: true
+    description: 进程标识（PID / 名称 / 端口号）
+    extract: "(?:杀|杀掉|终止|结束|停止|关闭|kill|干掉|关掉)\\s*(?:进程)?\\s*(.+?)\\s*$"
+  - name: by_port
+    required: false
+    description: 是否按端口查找
+    extract: "(端口|port|占用)"
+steps:
+  - name: kill_by_pid
+    type: command
+    condition: "{{target}} !=  && {{by_port}} ==  && {{target}} == ^[0-9]+$"
+    description: 按 PID 终止
+    command: "PID='{{target}}' ; if ! ps -p $PID >/dev/null 2>&1 ; then echo \"进程 $PID 不存在\" ; exit 0 ; fi ; echo \"进程信息：\" ; ps -p $PID -o pid,user,pcpu,pmem,comm ; kill -TERM $PID ; sleep 2 ; if ps -p $PID >/dev/null 2>&1 ; then echo \"进程未退出，强制终止\" ; kill -9 $PID ; sleep 1 ; fi ; ps -p $PID >/dev/null 2>&1 && echo \"无法终止 $PID\" || echo \"$PID 已终止\""
+    safety: grey
+    confirm: "终止进程 PID {{target}}"
+    timeout: 15
+    on_failure: continue
+  - name: kill_by_name
+    type: command
+    condition: "{{target}} !=  && {{by_port}} ==  && {{target}} != ^[0-9]+$"
+    description: 按名称终止
+    command: "NAME='{{target}}' ; PIDS=$(pgrep -fi \"$NAME\" 2>/dev/null) ; if [ -z \"$PIDS\" ] ; then echo \"未找到匹配 $NAME 的进程\" ; exit 0 ; fi ; echo \"匹配进程：\" ; ps -p $(echo $PIDS | tr '\\n' ',') -o pid,user,pcpu,pmem,comm,args 2>/dev/null ; for p in $PIDS ; do kill -TERM $p 2>/dev/null ; done ; sleep 2 ; REMAIN=$(pgrep -fi \"$NAME\" 2>/dev/null) ; if [ -n \"$REMAIN\" ] ; then echo \"强制终止：$REMAIN\" ; for p in $REMAIN ; do kill -9 $p 2>/dev/null ; done ; sleep 1 ; fi ; pgrep -fi \"$NAME\" >/dev/null 2>&1 && echo \"无法完全终止 $NAME\" || echo \"$NAME 已终止\""
+    safety: grey
+    confirm: "终止所有名为「{{target}}」的进程"
+    timeout: 15
+    on_failure: continue
+  - name: kill_by_port
+    type: command
+    condition: "{{target}} !=  && {{by_port}} != "
+    description: 按端口终止
+    command: "PORT='{{target}}' ; PIDS=$(ss -tlnp 2>/dev/null | grep \":$PORT \" | grep -oP 'pid=\\K[0-9]+' | sort -u) ; if [ -z \"$PIDS\" ] ; then PIDS=$(lsof -ti :$PORT 2>/dev/null) ; fi ; if [ -z \"$PIDS\" ] ; then echo \"没有进程占用端口 $PORT\" ; exit 0 ; fi ; echo \"占用端口 $PORT 的进程：\" ; ps -p $(echo $PIDS | tr '\\n' ',') -o pid,user,comm,args 2>/dev/null ; for p in $PIDS ; do kill -TERM $p 2>/dev/null ; done ; sleep 2 ; REMAIN=$(ss -tlnp 2>/dev/null | grep \":$PORT \" | grep -oP 'pid=\\K[0-9]+' | sort -u) ; if [ -n \"$REMAIN\" ] ; then for p in $REMAIN ; do kill -9 $p 2>/dev/null ; done ; fi ; echo \"端口 $PORT 已释放\""
+    safety: grey
+    confirm: "终止占用端口 {{target}} 的进程"
+    timeout: 15
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '进程已终止'"

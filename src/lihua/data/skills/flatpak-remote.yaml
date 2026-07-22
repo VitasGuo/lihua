@@ -1,0 +1,70 @@
+name: flatpak_remote
+description: Flatpak 远程仓库管理（添加/删除/查看，含 flathub）
+version: 0.1
+category: mirror
+author: lihua
+triggers:
+  - flatpak仓库
+  - flatpak源
+  - 添加flatpak
+  - 删除flatpak仓库
+  - 查看flatpak仓库
+  - flatpak remote
+  - 添加flathub
+examples:
+  - 添加 flathub
+  - 查看 flatpak 仓库
+  - 删除 flatpak 仓库 flathub
+parameters:
+  - name: action
+    required: false
+    description: 操作（添加/删除/移除/查看/列表）
+    extract: "(添加|删除|移除|查看|列表)"
+  - name: remote
+    required: false
+    description: 远程仓库名（如 flathub）
+    extract: "(?:添加|删除|移除)\\s+(?:flatpak\\s+)?(?:仓库\\s+)?(.+?)\\s*$"
+steps:
+  - name: check_flatpak
+    type: verify
+    description: 检查 flatpak 是否可用
+    command: "which flatpak && flatpak --version"
+    on_failure: stop
+  - name: list_remotes
+    type: command
+    condition: "{{action}} == 查看 || {{action}} == 列表 || {{action}} == "
+    description: 列出 flatpak 远程仓库
+    command: "echo '=== Flatpak 远程仓库 ===' ; flatpak remotes"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: add_flathub
+    type: command
+    condition: "{{action}} == 添加 && {{remote}} == flathub || {{action}} == 添加 && {{remote}} == "
+    description: 添加 flathub 远程仓库
+    command: "flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo && echo '已添加 flathub 仓库'"
+    safety: grey
+    confirm: "添加 Flatpak flathub 远程仓库"
+    timeout: 60
+    on_failure: stop
+  - name: add_custom_remote
+    type: command
+    condition: "{{action}} == 添加 && {{remote}} != flathub && {{remote}} != "
+    description: 添加自定义 flatpak 远程仓库（需提供 URL）
+    command: "echo '请提供仓库 URL，例如：' ; echo '  flatpak remote-add --if-not-exists {{remote}} <URL>' ; echo '（此处仅显示命令，需要用户补充 URL）' ; exit 1"
+    safety: grey
+    confirm: "添加自定义 Flatpak 远程仓库「{{remote}}」（需要 URL）"
+    timeout: 60
+    on_failure: continue
+  - name: remove_remote
+    type: command
+    condition: "{{action}} == 删除 && {{remote}} !=  || {{action}} == 移除 && {{remote}} != "
+    description: 删除 flatpak 远程仓库
+    command: "flatpak remote-delete '{{remote}}' && echo '已删除 flatpak 远程仓库 {{remote}}'"
+    safety: grey
+    confirm: "删除 Flatpak 远程仓库「{{remote}}」"
+    timeout: 30
+    on_failure: stop
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' 'Flatpak 仓库操作完成'"

@@ -1,0 +1,114 @@
+name: open_app
+description: 打开应用程序（用默认方式启动）
+version: 0.1
+category: app
+author: lihua
+triggers:
+  - 打开
+  - 启动
+  - 运行
+  - 开
+  - 起
+  - 唤起
+  - 启动应用
+  - 打开应用
+  - 运行应用
+  - 启动程序
+  - 打开程序
+  - 运行程序
+  - 启动软件
+examples:
+  - 打开 firefox
+  - 启动 vscode
+  - 运行 gnome-tweaks
+parameters:
+  - name: app
+    required: true
+    description: 应用名（命令名或 .desktop 文件名）
+    extract: "(?:打开|启动|运行|唤起|开|起)\\s*(?:应用|程序|软件|app)?\\s*(.+?)\\s*$"
+aliases:
+  文件管理器: ["nautilus", "thunar", "dolphin", "nemo", "pcmanfm"]
+  浏览器: ["firefox", "google-chrome", "chromium-browser"]
+  火狐: ["firefox"]
+  firefox: ["firefox"]
+  chrome: ["google-chrome"]
+  谷歌浏览器: ["google-chrome"]
+  chromium: ["chromium-browser"]
+  edge: ["microsoft-edge"]
+  设置: ["gnome-control-center"]
+  系统设置: ["gnome-control-center"]
+  控制中心: ["gnome-control-center"]
+  调整: ["gnome-tweaks"]
+  gnome-tweaks: ["gnome-tweaks"]
+  tweaks: ["gnome-tweaks"]
+  终端: ["gnome-terminal", "kgx", "konsole", "xterm"]
+  terminal: ["gnome-terminal"]
+  文本编辑器: ["gedit", "gnome-text-editor", "kate", "mousepad"]
+  gedit: ["gedit"]
+  vscode: ["code"]
+  visual studio code: ["code"]
+  code: ["code"]
+  cursor: ["cursor"]
+  pycharm: ["pycharm-community"]
+  intellij: ["intellij-idea-community"]
+  clion: ["clion"]
+  webstorm: ["webstorm"]
+  android studio: ["android-studio"]
+  任务管理器: ["gnome-system-monitor"]
+  系统监视器: ["gnome-system-monitor"]
+  htop: ["htop"]
+  btop: ["btop"]
+  计算器: ["gnome-calculator"]
+  计算器: ["gnome-calculator"]
+  截图: ["gnome-screenshot"]
+  截图工具: ["gnome-screenshot"]
+  文件: ["nautilus"]
+  files: ["nautilus"]
+  软件商店: ["gnome-software"]
+  软件中心: ["gnome-software"]
+  应用商店: ["gnome-software"]
+  flatpak 应用: ["flatpak"]
+  文档查看器: ["evince"]
+  图片查看器: ["eog"]
+  图片: ["eog"]
+  相册: ["shotwell"]
+  音乐: ["rhythmbox"]
+  视频: ["totem"]
+  vlc: ["vlc"]
+  spotify: ["spotify"]
+  网易云音乐: ["netease-cloud-music"]
+  qq: ["com.qq.QQ"]
+  qq音乐: ["qqmusic"]
+  钉钉: ["com.alibabainc.dingtalk"]
+  飞书: ["com.bytedance.feishu"]
+  微信: ["com.tencent.WeChat"]
+  telegram: ["org.telegram.desktop"]
+  电报: ["org.telegram.desktop"]
+  discord: ["com.discordapp.discord"]
+  wps: ["com.wps.office"]
+  wps office: ["com.wps.office"]
+  libreoffice: ["libreoffice"]
+  办公套件: ["libreoffice"]
+  gimp: ["gimp"]
+  krita: ["krita"]
+  inkscape: ["inkscape"]
+  blender: ["blender"]
+  obs: ["obs"]
+  obs studio: ["obs"]
+  steam: ["steam"]
+steps:
+  - name: resolve_cmd
+    type: set_var
+    description: 解析应用命令
+    vars:
+      cmd: "{{app|default:firefox}}"
+  - name: launch
+    type: command
+    description: 启动应用
+    command: "CMD='{{cmd}}' ; if [[ \"$CMD\" == com.* || \"$CMD\" == org.* || \"$CMD\" == io.* ]] ; then flatpak run \"$CMD\" >/dev/null 2>&1 & disown ; elif command -v \"$CMD\" >/dev/null 2>&1 ; then nohup \"$CMD\" >/dev/null 2>&1 & disown ; else nohup xdg-open \"$CMD\" >/dev/null 2>&1 & disown 2>/dev/null || (echo \"未找到 $CMD，尝试搜索 desktop 文件...\" ; DESKTOP=$(grep -l \"$CMD\" ~/.local/share/applications/*.desktop /usr/share/applications/*.desktop 2>/dev/null | head -1) ; [ -n \"$DESKTOP\" ] && gtk-launch \"$(basename \"$DESKTOP\" .desktop)\" && echo launched) ; fi ; echo \"已启动：$CMD\""
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '已打开 {{app}}'"

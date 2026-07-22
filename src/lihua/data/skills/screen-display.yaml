@@ -1,0 +1,114 @@
+name: screen_display
+description: 屏幕显示设置（分辨率 / 刷新率 / 亮度 / 缩放 / 多屏 / 镜像）
+version: 0.1
+category: hardware
+author: lihua
+triggers:
+  - 屏幕设置
+  - 显示设置
+  - 分辨率
+  - 刷新率
+  - 改分辨率
+  - 改刷新率
+  - 亮度
+  - 调亮度
+  - 改亮度
+  - 缩放
+  - 改缩放
+  - 缩放比例
+  - 多屏
+  - 多显示器
+  - 扩展屏幕
+  - 镜像屏幕
+  - 复制屏幕
+  - 双屏
+  - 主屏
+  - 主显示器
+  - 关屏幕
+  - 关显示器
+examples:
+  - 改分辨率
+  - 调亮度
+  - 扩展屏幕
+parameters:
+  - name: action
+    required: false
+    description: 操作（resolution / refresh / brightness / scale / extend / mirror / off / primary）
+    extract: "(分辨率|刷新率|亮度|缩放|多屏|多显示器|扩展|镜像|复制|双屏|主屏|主显示器|关屏幕|关显示器)"
+  - name: value
+    required: false
+    description: 设置值（分辨率/刷新率/亮度百分比）
+    extract: "(\\d+x\\d+|\\d+[Hh]z|\\d+%|\\d+%)"
+steps:
+  - name: show_displays
+    type: command
+    condition: "{{action}} ==  && {{value}} == "
+    description: 查看当前显示设置
+    command: "echo '=== 显示器 ===' ; xrandr --listmonitors 2>/dev/null || wlr-randr 2>/dev/null ; echo ; echo '=== 详细信息 ===' ; xrandr 2>/dev/null | head -30"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: set_resolution
+    type: command
+    condition: "{{action}} == 分辨率 && {{value}} != "
+    description: 设置分辨率
+    command: "OUTPUT=$(xrandr --listmonitors 2>/dev/null | grep -oP '^\\s*\\d+:\\s+\\+?\\*?\\K\\S+' | head -1) ; if [ -z \"$OUTPUT\" ] ; then OUTPUT=$(xrandr 2>/dev/null | grep -oP '^\\K[^ ]+(?= connected)' | head -1) ; fi ; xrandr --output \"$OUTPUT\" --mode '{{value}}'"
+    safety: grey
+    confirm: "设置分辨率为 {{value}}"
+    timeout: 10
+    on_failure: continue
+  - name: set_refresh
+    type: command
+    condition: "{{action}} == 刷新率 && {{value}} != "
+    description: 设置刷新率
+    command: "OUTPUT=$(xrandr --listmonitors 2>/dev/null | grep -oP '^\\s*\\d+:\\s+\\+?\\*?\\K\\S+' | head -1) ; if [ -z \"$OUTPUT\" ] ; then OUTPUT=$(xrandr 2>/dev/null | grep -oP '^\\K[^ ]+(?= connected)' | head -1) ; fi ; RATE=$(echo '{{value}}' | grep -oP '\\d+') ; xrandr --output \"$OUTPUT\" --rate $RATE"
+    safety: grey
+    confirm: "设置刷新率为 {{value}}"
+    timeout: 10
+    on_failure: continue
+  - name: set_brightness
+    type: command
+    condition: "{{action}} == 亮度 && {{value}} != "
+    description: 设置屏幕亮度
+    command: "PCT=$(echo '{{value}}' | grep -oP '\\d+') ; brightnessctl set ${PCT}% 2>/dev/null || (gdbus call --session --dest org.gnome.SettingsDaemon.Power --object-path /org/gnome/SettingsDaemon/Power --method org.gnome.SettingsDaemon.Power.Screen.SetPercentage $PCT 2>/dev/null && echo done) || echo '设置亮度失败'"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: brightness_up
+    type: command
+    condition: "{{action}} == 亮度 && {{value}} == "
+    description: 显示当前亮度并提示
+    command: "echo '=== 当前亮度 ===' ; brightnessctl info 2>/dev/null || echo 'brightnessctl 不可用' ; echo ; echo '用法：调亮度 50% / 调亮度 80%'"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: extend_screen
+    type: command
+    condition: "{{action}} == 扩展 || {{action}} == 多屏 || {{action}} == 多显示器 || {{action}} == 双屏"
+    description: 扩展屏幕
+    command: "OUTPUTS=$(xrandr 2>/dev/null | grep -oP '^\\K[^ ]+(?= connected)') ; PRIMARY=$(echo \"$OUTPUTS\" | head -1) ; SECONDARY=$(echo \"$OUTPUTS\" | sed -n '2p') ; if [ -z \"$SECONDARY\" ] ; then echo '只检测到一个显示器' ; exit 0 ; fi ; xrandr --output \"$PRIMARY\" --auto --output \"$SECONDARY\" --auto --right-of \"$PRIMARY\""
+    safety: grey
+    confirm: "扩展屏幕（第二个显示器放在主显示器右侧）"
+    timeout: 10
+    on_failure: continue
+  - name: mirror_screen
+    type: command
+    condition: "{{action}} == 镜像 || {{action}} == 复制"
+    description: 镜像屏幕
+    command: "OUTPUTS=$(xrandr 2>/dev/null | grep -oP '^\\K[^ ]+(?= connected)') ; PRIMARY=$(echo \"$OUTPUTS\" | head -1) ; for o in $OUTPUTS ; do [ \"$o\" = \"$PRIMARY\" ] && continue ; xrandr --output \"$o\" --same-as \"$PRIMARY\" ; done"
+    safety: grey
+    confirm: "镜像屏幕（多个显示器显示相同内容）"
+    timeout: 10
+    on_failure: continue
+  - name: scale_display
+    type: command
+    condition: "{{action}} == 缩放"
+    description: 设置缩放比例
+    command: "if [ -z '{{value}}' ] ; then echo '当前缩放：' ; gsettings get org.gnome.desktop.interface scaling-factor ; gsettings get org.gnome.mutter experimental-features ; echo '用法：改缩放 200%' ; exit 0 ; fi ; PCT=$(echo '{{value}}' | grep -oP '\\d+') ; if [ \"$PCT\" -ge 150 ] ; then gsettings set org.gnome.desktop.interface scaling-factor 2 ; echo '缩放设为 200%' ; else gsettings set org.gnome.desktop.interface scaling-factor 1 ; echo '缩放设为 100%' ; fi"
+    safety: grey
+    confirm: "设置显示缩放为 {{value|default:100%}}"
+    timeout: 10
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '屏幕设置已更新'"

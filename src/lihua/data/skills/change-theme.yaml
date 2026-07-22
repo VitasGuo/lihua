@@ -1,0 +1,83 @@
+name: change_theme
+description: 切换主题（深色 / 浅色 / 强调色 / 图标主题）
+version: 0.1
+category: desktop
+author: lihua
+triggers:
+  - 换主题
+  - 改主题
+  - 设主题
+  - 深色模式
+  - 暗色模式
+  - 浅色模式
+  - 亮色模式
+  - 夜间模式
+  - 日间模式
+  - 切深色
+  - 切浅色
+  - 切暗色
+  - 切亮色
+  - 强调色
+  - 改强调色
+  - 主题色
+  - 图标主题
+  - 改图标
+  - 主题
+  - theme
+examples:
+  - 切换深色模式
+  - 切浅色
+  - 改强调色蓝色
+parameters:
+  - name: action
+    required: false
+    description: 操作（dark / light / accent / icons / show）
+    extract: "(深色|暗色|浅色|亮色|夜间|日间|强调色|主题色|图标)"
+  - name: value
+    required: false
+    description: 颜色或主题名
+    extract: "(?:强调色|主题色|图标)\\s*(蓝色|红色|绿色|紫色|橙色|黄色|青色|pink|red|blue|green|purple|orange|yellow|teal|[a-zA-Z0-9_-]+)"
+steps:
+  - name: show_theme
+    type: command
+    condition: "{{action}} ==  || {{action}} == 主题"
+    description: 显示当前主题
+    command: "echo '=== 颜色方案 ===' ; gsettings get org.gnome.desktop.interface color-scheme 2>/dev/null ; echo '=== GTK 主题 ===' ; gsettings get org.gnome.desktop.interface gtk-theme 2>/dev/null ; echo '=== 图标主题 ===' ; gsettings get org.gnome.desktop.interface icon-theme 2>/dev/null ; echo '=== 强调色 ===' ; gsettings get org.gnome.desktop.interface accent-color 2>/dev/null ; echo ; echo '用法：切深色 / 切浅色 / 改强调色 蓝色'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: set_dark
+    type: command
+    condition: "{{action}} == 深色 || {{action}} == 暗色 || {{action}} == 夜间"
+    description: 切换到深色模式
+    command: "gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' && gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark' 2>/dev/null ; echo '已切换到深色模式'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: set_light
+    type: command
+    condition: "{{action}} == 浅色 || {{action}} == 亮色 || {{action}} == 日间"
+    description: 切换到浅色模式
+    command: "gsettings set org.gnome.desktop.interface color-scheme 'prefer-light' && gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita' 2>/dev/null ; echo '已切换到浅色模式'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: set_accent
+    type: command
+    condition: "{{action}} == 强调色 || {{action}} == 主题色"
+    description: 设置强调色
+    command: "case '{{value|default:blue}}' in 蓝色|blue) COLOR='blue' ;; 红色|red) COLOR='red' ;; 绿色|green) COLOR='green' ;; 紫色|purple) COLOR='purple' ;; 橙色|orange) COLOR='orange' ;; 黄色|yellow) COLOR='yellow' ;; 青色|teal) COLOR='teal' ;; pink) COLOR='pink' ;; *) COLOR='{{value|default:blue}}' ;; esac ; gsettings set org.gnome.desktop.interface accent-color \"$COLOR\" && echo '强调色已设为 '$COLOR"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: set_icons
+    type: command
+    condition: "{{action}} == 图标"
+    description: 设置图标主题
+    command: "gsettings set org.gnome.desktop.interface icon-theme '{{value|default:Adwaita}}' && echo '图标主题已设为 {{value|default:Adwaita}}'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '主题已更新'"

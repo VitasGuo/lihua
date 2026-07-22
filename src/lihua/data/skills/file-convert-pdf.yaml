@@ -1,0 +1,50 @@
+name: file_convert_pdf
+description: 文档转 PDF（libreoffice --headless，支持 doc/docx/ppt/pptx/xls/xlsx/odt/md）
+version: 0.1
+category: file_adv
+author: lihua
+triggers:
+  - 转pdf
+  - 转成pdf
+  - 转换pdf
+  - 转为pdf
+  - doc转pdf
+  - docx转pdf
+  - ppt转pdf
+  - xls转pdf
+  - 文档转pdf
+  - office转pdf
+examples:
+  - doc转pdf report.docx
+  - 把 report.pptx 转成 pdf
+parameters:
+  - name: file
+    required: true
+    description: 源文档路径
+    extract: "(\\S+\\.(?:doc|docx|ppt|pptx|xls|xlsx|odt|md))\\s*$"
+steps:
+  - name: check_file
+    type: command
+    description: 检查文档是否存在
+    command: "ls -la '{{file}}'"
+    safety: white
+    timeout: 5
+    on_failure: stop
+  - name: convert
+    type: command
+    description: 用 libreoffice 转换为 PDF（输出到当前目录）
+    command: "libreoffice --headless --convert-to pdf '{{file}}'"
+    safety: grey
+    confirm: "将 {{file}} 转换为 PDF"
+    timeout: 120
+    on_failure: stop
+  - name: show_result
+    type: command
+    description: 显示转换后的 PDF 文件
+    command: "F='{{file}}' ; ls -la \"${F%.*}.pdf\" 2>/dev/null || ls -la *.pdf 2>/dev/null | head -5"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' 'PDF 转换完成：{{file}}'"

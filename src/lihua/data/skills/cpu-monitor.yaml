@@ -1,0 +1,71 @@
+name: cpu_monitor
+description: CPU 监控（使用率 / 负载 / 频率 / 核心数 / 温度）
+version: 0.1
+category: process
+author: lihua
+triggers:
+  - cpu 使用
+  - cpu 使用率
+  - 看 cpu
+  - 查看 cpu
+  - cpu 占用
+  - cpu 负载
+  - 系统负载
+  - cpu 频率
+  - cpu 频率
+  - cpu 温度
+  - cpu 核心
+  - cpu 信息
+  - cpu 监控
+  - 监控 cpu
+examples:
+  - 看 CPU 使用率
+  - CPU 负载
+  - CPU 温度
+parameters: []
+steps:
+  - name: cpu_usage
+    type: command
+    description: CPU 使用率（瞬时）
+    command: "echo '=== CPU 使用率（瞬时）===' ; top -bn1 | grep '^%Cpu' ; echo ; echo '=== 各核心使用率 ===' ; mpstat -P ALL 1 1 2>/dev/null | tail -n +4 || cat /proc/stat | grep '^cpu[0-9]' | awk '{print \"cpu\"$1\" user=\"$2\" nice=\"$3\" system=\"$4\" idle=\"$5}'"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: load_avg
+    type: command
+    description: 系统负载（1/5/15分钟）
+    command: "echo '=== 系统负载 ===' ; uptime ; echo ; echo '=== 负载详情 ===' ; cat /proc/loadavg"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: cpu_info
+    type: command
+    description: CPU 信息
+    command: "echo '=== CPU 信息 ===' ; lscpu | grep -E '^(Model name|Architecture|CPU\\(s\\)|Thread|Core|Socket|CPU max|CPU min|Vendor|Virtualization|L1|L2|L3)'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: cpu_freq
+    type: command
+    description: CPU 频率
+    command: "echo '=== CPU 频率 ===' ; cat /proc/cpuinfo | grep -E 'cpu MHz|model name' | head -10 ; echo ; echo '=== 当前频率 ===' ; for f in /sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq ; do [ -f \"$f\" ] && echo \"$(dirname $f | xargs basename) : $(($(cat $f)/1000)) MHz\" ; done 2>/dev/null | head -8"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: cpu_temp
+    type: command
+    description: CPU 温度
+    command: "echo '=== CPU 温度 ===' ; (sensors 2>/dev/null | grep -iE 'core|temp|cpu|tdie|tctl' | head -10) || (cat /sys/class/thermal/thermal_zone*/temp 2>/dev/null | awk '{printf \"%.1f°C\\n\", $1/1000}') || echo 'sensors 未安装或无温度传感器'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: top_processes
+    type: command
+    description: CPU 占用最高的进程
+    command: "echo '=== Top 10 CPU 进程 ===' ; ps -eo pid,user,pcpu,pmem,comm --sort=-pcpu | head -11"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' 'CPU 监控信息已显示'"

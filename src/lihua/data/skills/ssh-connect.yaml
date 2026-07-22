@@ -1,0 +1,51 @@
+name: ssh_connect
+description: SSH 远程连接（注：实际执行会进入交互式 shell，建议在终端使用；lihua 仅作意图识别与命令构造）
+version: 0.1
+category: network_sys
+author: lihua
+triggers:
+  - ssh连接
+  - 连接ssh
+  - 连ssh
+  - ssh连
+  - 远程连接
+  - 远程登录
+  - ssh登录
+  - 远程ssh
+  - ssh远程
+examples:
+  - ssh连接 user@host
+  - 远程登录 user@192.168.1.10
+parameters:
+  - name: host
+    required: false
+    description: 远程主机（user@host 或 IP）
+    extract: "(?:连接|连|登录|远程)\\s*(?:ssh\\s+)?(.+?)\\s*$"
+steps:
+  - name: check_ssh
+    type: command
+    description: 检查 ssh 客户端
+    command: "which ssh && ssh -V 2>&1"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: show_target
+    type: command
+    condition: "{{host}} != "
+    description: 显示即将连接的目标主机
+    command: "echo '即将 SSH 连接：{{host}}'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: connect
+    type: command
+    condition: "{{host}} != "
+    description: SSH 连接（进入交互式 shell）
+    command: "ssh {{host}}"
+    safety: grey
+    confirm: "SSH 连接 {{host}}（将进入远程交互式 shell）"
+    timeout: 60
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' 'SSH 会话已结束'"

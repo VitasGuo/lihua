@@ -1,0 +1,74 @@
+name: share_folder
+description: Samba 文件共享（安装 / 创建共享文件夹 / 查看 / 删除，分享给 Windows 等设备）
+version: 0.1
+category: network_sys
+author: lihua
+triggers:
+  - 共享文件夹
+  - 共享目录
+  - samba共享
+  - 文件共享
+  - 共享文件
+  - 网络共享
+  - smb共享
+  - 创建共享
+  - 共享给windows
+  - 共享给windows
+examples:
+  - 共享文件夹 /home/share
+  - 创建共享 /srv/public
+  - 查看共享
+parameters:
+  - name: action
+    required: false
+    description: 操作（创建 / 共享 / 查看 / 删除 / 安装）
+    extract: "(创建|共享|查看|删除|安装)"
+  - name: path
+    required: false
+    description: 要共享的目录路径
+    extract: "(?:共享|创建)\\s*(?:文件夹\\s*|目录\\s*)?(.+?)\\s*$"
+steps:
+  - name: check_samba
+    type: command
+    description: 检查 samba 是否安装
+    command: "echo '=== Samba 工具检测 ===' ; for cmd in smbd nmbd smbstatus testparm ; do if command -v $cmd > /dev/null 2>&1 ; then echo \"✓ $cmd ($(which $cmd))\" ; else echo \"✗ $cmd 未安装\" ; fi ; done ; echo ; dpkg -l 2>/dev/null | grep -E '^ii\\s+samba' || echo 'samba 包未安装'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: show_shares
+    type: command
+    condition: "{{action}} == 查看 || {{action}} == "
+    description: 查看当前共享
+    command: "echo '=== 当前共享连接 ===' ; pkexec smbstatus --shares 2>/dev/null || echo 'smbstatus 不可用' ; echo ; echo '=== smb.conf 共享段 ===' ; cat /etc/samba/smb.conf 2>/dev/null | grep -A5 '^\\[.*\\]' | head -40 || echo '/etc/samba/smb.conf 不存在'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: install_samba
+    type: command
+    condition: "{{action}} == 安装"
+    description: 安装 samba 服务
+    command: "pkexec apt install -y samba && echo 'samba 安装完成'"
+    safety: grey
+    confirm: "安装 samba 服务（apt install samba）"
+    timeout: 300
+    on_failure: stop
+  - name: create_share
+    type: command
+    condition: "{{action}} == 创建 || {{action}} == 共享"
+    description: 创建共享文件夹并写入 smb.conf
+    command: "if [ -z '{{path}}' ] ; then echo '未指定路径，用法：共享文件夹 /home/share' ; exit 1 ; fi ; pkexec mkdir -p '{{path}}' && pkexec chmod 777 '{{path}}' && echo -e '\\n[lihua-share]\\n   path = {{path}}\\n   browseable = yes\\n   writable = yes\\n   guest ok = yes' | pkexec tee -a /etc/samba/smb.conf > /dev/null && pkexec systemctl restart smbd && echo '已共享：{{path}}（任意人可读写）'"
+    safety: grey
+    confirm: "共享文件夹 {{path}}（任意人可读写，无密码访问）"
+    timeout: 30
+    on_failure: stop
+  - name: show_share_info
+    type: command
+    condition: "{{action}} == 创建 || {{action}} == 共享"
+    description: 显示访问方式
+    command: "echo '=== 访问方式 ===' ; HOSTNAME=$(hostname) ; echo \"Windows 文件管理器输入：\\\\\\\\$HOSTNAME\\\\lihua-share\" ; echo ; echo '本机 IP 地址：' ; ip -4 addr show | grep -oP '(?<=inet\\s)\\d+(\\.\\d+){3}' | grep -v '127.0.0.1'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' 'Samba 共享操作完成'"

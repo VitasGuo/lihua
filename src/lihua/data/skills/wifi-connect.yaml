@@ -1,0 +1,66 @@
+name: wifi_connect
+description: 连接 WiFi 网络
+version: 0.1
+category: network
+author: lihua
+triggers:
+  - 连接 wifi
+  - 连 WiFi
+  - 连 wifi
+  - 连接 WiFi
+  - WiFi 列表
+  - wifi 列表
+  - 扫描 wifi
+  - 扫描 WiFi
+  - 看 WiFi
+  - 查看 WiFi
+  - 切换 WiFi
+  - 换 WiFi
+  - wifi
+examples:
+  - 扫描 WiFi
+  - 连接 MyHome
+parameters:
+  - name: ssid
+    required: false
+    description: WiFi 名称
+    extract: "(?:连接|连|加入|connect)\\s+(?:WiFi\\s+|wifi\\s+)?(.+?)\\s*$"
+  - name: password
+    required: false
+    description: WiFi 密码
+    extract: "(?:连接|连|加入)\\s+(?:WiFi\\s+|wifi\\s+)?(\\S+)\\s+(?:密码\\s+)?(\\S+)\\s*$"
+steps:
+  - name: scan
+    type: command
+    condition: "{{ssid}} == "
+    description: 扫描附近的 WiFi
+    command: "nmcli device wifi rescan 2>/dev/null ; nmcli -t -f ssid,signal,security device wifi list 2>/dev/null | head -20"
+    safety: white
+    timeout: 15
+    on_failure: continue
+  - name: connect_with_password
+    type: command
+    condition: "{{ssid}} !=  && {{password}} != "
+    description: 用密码连接 WiFi
+    command: "nmcli device wifi connect '{{ssid}}' password '{{password}}'"
+    safety: grey
+    confirm: "连接 WiFi「{{ssid}}」"
+    timeout: 30
+    on_failure: stop
+  - name: connect_no_password
+    type: command
+    condition: "{{ssid}} !=  && {{password}} == "
+    description: 连接 WiFi（已保存的网络）
+    command: "nmcli connection up '{{ssid}}' 2>/dev/null || nmcli device wifi connect '{{ssid}}'"
+    safety: grey
+    confirm: "连接 WiFi「{{ssid}}」"
+    timeout: 30
+    on_failure: stop
+  - name: verify
+    type: verify
+    description: 验证连接
+    command: "nmcli -t -f active,ssid,signal dev wifi list | grep '^yes'"
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' 'WiFi 已连接：{{ssid}}'"

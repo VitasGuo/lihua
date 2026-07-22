@@ -1,0 +1,72 @@
+name: network_info
+description: 查看网络信息（IP/网关/DNS/WiFi/连接状态）
+version: 0.1
+category: network
+author: lihua
+triggers:
+  - 网络信息
+  - 网络状态
+  - 查看 IP
+  - 看看 IP
+  - IP 地址
+  - 本机 IP
+  - 我的 IP
+  - 网络配置
+  - WiFi 信息
+  - wifi 信息
+  - 网络连接
+  - 查看网络
+  - 看看网络
+  - 网卡信息
+  - 网关
+  - DNS
+  - 网络接口
+  - ifconfig
+  - ip addr
+examples:
+  - 查看网络信息
+  - 我的 IP 是什么
+parameters: []
+steps:
+  - name: ip_addr
+    type: command
+    description: 网络接口和 IP 地址
+    command: "ip -br addr show"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: route
+    type: command
+    description: 路由表和默认网关
+    command: "ip route show"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: dns
+    type: command
+    description: DNS 配置
+    command: "cat /etc/resolv.conf 2>/dev/null | grep -v '^#'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: wifi_list
+    type: command
+    description: 已连接的 WiFi 信息
+    command: "nmcli -t -f active,ssid,signal,freq dev wifi list 2>/dev/null | grep '^yes' || echo '未连接 WiFi'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: public_ip
+    type: command
+    description: 公网 IP
+    command: "curl -s --max-time 5 https://api.ipify.org 2>/dev/null || echo '无法获取公网 IP'"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: connection_show
+    type: command
+    description: NetworkManager 连接列表
+    command: "nmcli connection show --no-pager | head -10"
+    safety: white
+    timeout: 5
+    on_failure: continue

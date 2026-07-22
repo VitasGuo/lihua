@@ -1,0 +1,69 @@
+name: clipboard_history
+description: 剪贴板管理（查看 / 清空 / 安装 CopyQ）
+version: 0.1
+category: desktop_hw
+author: lihua
+triggers:
+  - 剪贴板历史
+  - 剪贴板记录
+  - 剪贴板管理
+  - 查看剪贴板
+  - 清空剪贴板
+  - clipboard历史
+  - 复制历史
+  - 粘贴历史
+examples:
+  - 查看剪贴板
+  - 清空剪贴板
+parameters:
+  - name: action
+    required: false
+    description: 操作（查看 / 列表 / 清空 / 安装）
+    extract: "(查看|清空|安装|列表)"
+steps:
+  - name: check_tools
+    type: command
+    condition: "{{action}} ==  || {{action}} == 查看 || {{action}} == 列表"
+    description: 检查可用的剪贴板工具
+    command: "echo '=== 剪贴板工具检测 ===' ; for cmd in wl-copy wl-paste xclip xsel copyq ; do if command -v $cmd > /dev/null 2>&1 ; then echo \"✓ $cmd ($(which $cmd))\" ; else echo \"✗ $cmd 未安装\" ; fi ; done"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: show_clipboard
+    type: command
+    condition: "{{action}} == 查看 || {{action}} == 列表 || {{action}} == "
+    description: 显示当前剪贴板内容
+    command: "echo '=== 当前剪贴板内容 ===' ; (wl-paste --no-newline 2>/dev/null || xclip -selection clipboard -o 2>/dev/null || xsel --clipboard --output 2>/dev/null || echo '（无可用剪贴板工具，请安装 wl-clipboard 或 xclip）')"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: install_copyq
+    type: command
+    condition: "{{action}} == 安装"
+    description: 安装 CopyQ 剪贴板管理器
+    command: "pkexec apt install -y copyq"
+    safety: grey
+    confirm: "安装 CopyQ 剪贴板管理器（apt）"
+    timeout: 300
+    on_failure: continue
+  - name: launch_copyq
+    type: command
+    condition: "{{action}} == 安装"
+    description: 启动 CopyQ
+    command: "nohup copyq > /dev/null 2>&1 & echo 'CopyQ 已启动'"
+    safety: grey
+    confirm: "启动 CopyQ 剪贴板管理器"
+    timeout: 10
+    on_failure: continue
+  - name: clear_clipboard
+    type: command
+    condition: "{{action}} == 清空"
+    description: 清空剪贴板
+    command: "wl-copy '' 2>/dev/null || (echo -n '' | xclip -selection clipboard 2>/dev/null) || (echo -n '' | xsel --clipboard --input 2>/dev/null) ; echo '剪贴板已清空'"
+    safety: grey
+    confirm: "清空剪贴板"
+    timeout: 5
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '剪贴板操作完成'"

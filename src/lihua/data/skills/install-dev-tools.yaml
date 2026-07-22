@@ -1,0 +1,96 @@
+name: install_dev_tools
+description: 安装开发工具链（语言 / 编辑器 / 容器 / 数据库 / CLI）
+version: 0.1
+category: install
+author: lihua
+triggers:
+  - 装开发环境
+  - 安装开发环境
+  - 装开发工具
+  - 安装开发工具
+  - 配置开发环境
+  - 装编程环境
+  - 装 dev tools
+  - 装 python 环境
+  - 装 node 环境
+  - 装 go 环境
+  - 装 rust 环境
+  - 装 java 环境
+  - 装 docker
+  - 装 git
+  - 装 git 环境
+  - 装 c 环境
+  - 装 c++ 环境
+  - 装 cpp 环境
+  - 装 cmake
+  - 装 make
+  - 装 gcc
+  - 装 mysql
+  - 装 postgres
+  - 装 redis
+  - 装 mongodb
+  - 装 sqlite
+examples:
+  - 装 python 环境
+  - 装 docker
+  - 装 java 环境
+parameters:
+  - name: tool
+    required: true
+    description: 工具名
+    extract: "(?:装|安装|配置)\\s*(?:个|一个)?\\s*(?:开发|编程)?\\s*(?:环境|工具)?\\s*([a-zA-Z+]+(?:\\s*环境)?)"
+aliases:
+  python: ["python3 python3-pip python3-venv python3-dev"]
+  python3: ["python3 python3-pip python3-venv python3-dev"]
+  node: ["nodejs npm"]
+  nodejs: ["nodejs npm"]
+  go: ["golang-go"]
+  golang: ["golang-go"]
+  rust: ["rustc cargo"]
+  java: ["default-jdk default-jre"]
+  jdk: ["default-jdk"]
+  jre: ["default-jre"]
+  c: ["gcc g++ make"]
+  c++: ["gcc g++ make"]
+  cpp: ["gcc g++ make"]
+  gcc: ["gcc g++ make"]
+  cmake: ["cmake"]
+  make: ["build-essential"]
+  docker: ["docker.io docker-compose"]
+  git: ["git"]
+  gh: ["gh"]
+  vim: ["vim"]
+  neovim: ["neovim"]
+  nvim: ["neovim"]
+  emacs: ["emacs"]
+  tmux: ["tmux"]
+  mysql: ["mysql-server mysql-client"]
+  postgres: ["postgresql postgresql-contrib"]
+  postgresql: ["postgresql postgresql-contrib"]
+  redis: ["redis-server redis-tools"]
+  mongodb: ["mongodb"]
+  sqlite: ["sqlite3"]
+  vscode: ["code"]
+  dbeaver: ["dbeaver"]
+steps:
+  - name: resolve_pkg
+    type: set_var
+    description: 解析工具包名
+    vars:
+      apt_pkg: "{{tool|default:build-essential}}"
+  - name: install
+    type: command
+    description: 通过 apt 安装开发工具
+    command: "pkexec apt install -y {{apt_pkg}}"
+    safety: grey
+    confirm: "安装开发工具：{{apt_pkg}}"
+    timeout: 600
+    on_failure: stop
+  - name: verify
+    type: verify
+    description: 验证安装
+    command: "echo '=== 安装结果 ===' ; for cmd in $(echo {{apt_pkg}}) ; do which $cmd 2>/dev/null && echo \"✓ $cmd\" || echo \"- $cmd (库文件)\" ; done"
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '开发工具 {{tool}} 已安装'"

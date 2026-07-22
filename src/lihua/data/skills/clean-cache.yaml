@@ -1,0 +1,81 @@
+name: clean_cache
+description: 清理系统缓存（apt / journal / 用户缓存 / 回收站）
+version: 0.1
+category: mvp
+author: lihua
+triggers:
+  - 清理缓存
+  - 清缓存
+  - 清一下缓存
+  - 清理垃圾
+  - 清垃圾
+  - 清理系统
+  - 清理一下系统
+  - 释放空间
+  - 清磁盘
+  - 清理磁盘
+  - 磁盘清理
+  - clean cache
+  - 清一下
+  - 清理
+examples:
+  - 清理缓存
+  - 清一下垃圾
+  - 释放点磁盘空间
+parameters:
+  - name: scope
+    description: 清理范围（all / apt / journal / user / trash）
+    default: "all"
+steps:
+  - name: apt_clean
+    type: command
+    description: 清理 apt 下载缓存
+    condition: "{{scope}} in [all, apt]"
+    command: "pkexec apt clean && pkexec apt autoremove -y"
+    safety: grey
+    confirm: "清理 apt 下载缓存（需要管理员权限）"
+    timeout: 120
+    on_failure: continue
+  - name: journal_clean
+    type: command
+    description: 只保留最近 7 天的 systemd 日志
+    condition: "{{scope}} in [all, journal]"
+    command: "pkexec journalctl --vacuum-time=7d"
+    safety: grey
+    confirm: "清理 systemd 日志（保留最近 7 天，需要管理员权限）"
+    timeout: 60
+    on_failure: continue
+  - name: user_cache_clean
+    type: command
+    description: 清理 ~/.cache 目录
+    condition: "{{scope}} in [all, user]"
+    command: "find ~/.cache -type f -atime +7 -delete 2>/dev/null; true"
+    safety: white
+    on_failure: continue
+  - name: trash_clean
+    type: command
+    description: 清空用户回收站
+    condition: "{{scope}} in [all, trash]"
+    command: "rm -rf ~/.local/share/Trash/files/* ~/.local/share/Trash/info/* 2>/dev/null; true"
+    safety: grey
+    confirm: "清空回收站"
+    timeout: 60
+    on_failure: continue
+  - name: flatpak_unused
+    type: command
+    description: 移除不再需要的 Flatpak 运行时
+    condition: "{{scope}} in [all, apt]"
+    command: "which flatpak && flatpak uninstall --unused -y || true"
+    safety: grey
+    confirm: "移除不再需要的 Flatpak 运行时"
+    timeout: 60
+    on_failure: continue
+  - name: show_disk_usage
+    type: command
+    description: 显示磁盘剩余空间
+    command: "df -h / | tail -1 | awk '{print \"根分区剩余：\" $4 \" (\" $5 \" 已用)\"}'"
+    safety: white
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '缓存清理完成'"

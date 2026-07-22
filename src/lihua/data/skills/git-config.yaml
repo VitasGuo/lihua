@@ -1,0 +1,71 @@
+name: git_config
+description: Git 配置管理（查看 / 设置用户名 / 设置邮箱 / 初始化）
+version: 0.1
+category: media_dev
+author: lihua
+triggers:
+  - 配置git
+  - git配置
+  - 设置git
+  - git设置
+  - git config
+  - 配置用户名
+  - 配置邮箱
+  - git用户名
+  - git邮箱
+  - git初始化
+examples:
+  - 配置git
+  - git配置用户名
+parameters:
+  - name: action
+    required: false
+    description: 操作（配置 / 设置 / 查看 / 初始化 / init）
+    extract: "(配置|设置|查看|初始化|init)"
+  - name: name
+    required: false
+    description: Git 用户名
+    extract: "(?:用户名|name)\\s+(.+?)\\s*$"
+  - name: email
+    required: false
+    description: Git 邮箱
+    extract: "(?:邮箱|email)\\s+(\\S+@\\S+)"
+steps:
+  - name: show_config
+    type: command
+    condition: "{{action}} == 查看 || {{action}} == "
+    description: 查看当前 git 配置
+    command: "echo '=== Git 全局配置 ===' ; git config --list --global 2>/dev/null ; echo ; echo '=== 当前仓库配置 ===' ; git config --list --local 2>/dev/null || echo '（不在 git 仓库中）'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: set_user_name
+    type: command
+    condition: "{{name}} != "
+    description: 设置 git 全局用户名
+    command: "git config --global user.name '{{name}}' && echo '已设置 user.name={{name}}'"
+    safety: grey
+    confirm: "设置 git 用户名为 {{name}}"
+    timeout: 5
+    on_failure: continue
+  - name: set_user_email
+    type: command
+    condition: "{{email}} != "
+    description: 设置 git 全局邮箱
+    command: "git config --global user.email '{{email}}' && echo '已设置 user.email={{email}}'"
+    safety: grey
+    confirm: "设置 git 邮箱为 {{email}}"
+    timeout: 5
+    on_failure: continue
+  - name: init_repo
+    type: command
+    condition: "{{action}} == 初始化 || {{action}} == init"
+    description: 在当前目录初始化 git 仓库
+    command: "git init && echo 'git 仓库已初始化'"
+    safety: grey
+    confirm: "在当前目录初始化 git 仓库"
+    timeout: 10
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' 'Git 配置已更新'"

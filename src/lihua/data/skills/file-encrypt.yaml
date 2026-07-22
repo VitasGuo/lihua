@@ -1,0 +1,54 @@
+name: file_encrypt
+description: 文件加密 / 解密（gpg 对称加密，加密后保留原文件由用户自行删除）
+version: 0.1
+category: file_adv
+author: lihua
+triggers:
+  - 加密文件
+  - 文件加密
+  - gpg加密
+  - 加密一下
+  - 解密文件
+  - 文件解密
+  - gpg解密
+examples:
+  - 加密文件 secret.txt
+  - 解密文件 secret.txt.gpg
+parameters:
+  - name: action
+    required: true
+    description: 操作（加密 / 解密）
+    extract: "(加密|解密)"
+  - name: file
+    required: true
+    description: 文件路径
+    extract: "(?:加密|解密)\\s+(?:文件\\s+)?(.+?)\\s*$"
+steps:
+  - name: check_file
+    type: command
+    description: 检查文件是否存在
+    command: "ls -la '{{file}}'"
+    safety: white
+    timeout: 5
+    on_failure: stop
+  - name: encrypt
+    type: command
+    condition: "{{action}} == 加密"
+    description: 用 gpg 对称加密（会提示输入密码，生成 .gpg 文件，原文件保留）
+    command: "gpg -c '{{file}}'"
+    safety: grey
+    confirm: "加密文件 {{file}}（会生成 {{file}}.gpg，原文件保留，请自行确认后删除）"
+    timeout: 120
+    on_failure: stop
+  - name: decrypt
+    type: command
+    condition: "{{action}} == 解密"
+    description: 用 gpg 解密（会提示输入密码，自动去掉 .gpg 后缀还原原文件）
+    command: "F='{{file}}' ; OUT=\"${F%.gpg}\" ; gpg -d \"$F\" > \"$OUT\""
+    safety: grey
+    confirm: "解密文件 {{file}}"
+    timeout: 120
+    on_failure: stop
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '{{action}}完成：{{file}}'"

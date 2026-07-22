@@ -1,0 +1,434 @@
+name: troubleshoot
+description: "新手救急诊断（合并版）：没声音 / 连不上WiFi / 没网 / 磁盘满 / 内存高 / CPU高 / 应用崩溃 / 系统慢。参数 issue 指定问题类型，action 指定诊断或修复。"
+version: 0.2
+category: troubleshoot
+author: lihua
+triggers:
+  # 没声音
+  - 没声音
+  - 没有声
+  - 听不到声音
+  - 声音没了
+  - 系统没声音
+  - 没声音了
+  - 喇叭不响
+  - 声音不出来
+  - 音频问题
+  # 连不上 WiFi
+  - 连不上wifi
+  - 连不上WiFi
+  - wifi连不上
+  - WiFi连不上
+  - 没wifi
+  - 没WiFi
+  - wifi用不了
+  - WiFi用不了
+  - 无线网连不上
+  - 无线网卡坏了
+  - wifi问题
+  # 没网
+  - 没网
+  - 没网络
+  - 上不了网
+  - 网络不通
+  - 网断了
+  - 连不上网
+  - 不能上网
+  - 网络问题
+  - 网络连不上
+  - 没有网络
+  # 磁盘满
+  - 磁盘满
+  - 硬盘满
+  - 磁盘空间不足
+  - 空间不足
+  - 磁盘不够
+  - 硬盘不够
+  - 没空间了
+  - 磁盘满了
+  - 存储不够
+  - 空间不够
+  # 内存高
+  - 内存高
+  - 内存占用高
+  - 内存满了
+  - 内存不够
+  - 内存吃光了
+  - 内存泄漏
+  - 内存紧张
+  - 内存吃紧
+  - 内存吃紧了
+  - 内存爆了
+  # CPU 高
+  - cpu高
+  - cpu占用高
+  - cpu满了
+  - cpu负载高
+  - cpu过载
+  - cpu紧张
+  - cpu跑满
+  - cpu 100%
+  - cpu过热
+  - cpu 卡
+  # 应用崩溃
+  - 应用崩溃
+  - 应用闪退
+  - 应用打不开
+  - 应用无响应
+  - 应用卡死
+  - 程序崩溃
+  - 程序闪退
+  - 程序打不开
+  - 软件崩溃
+  - 软件闪退
+  - 软件打不开
+  # 系统慢
+  - 系统慢
+  - 系统卡
+  - 系统很慢
+  - 系统太慢
+  - 电脑慢
+  - 电脑卡
+  - 电脑很慢
+  - 电脑太慢
+  - 卡顿
+  - 卡死了
+  - 反应慢
+  - 启动慢
+examples:
+  - 没声音了
+  - 连不上wifi
+  - 没网了
+  - 磁盘满了
+  - 内存占用高
+  - cpu占用高
+  - 应用崩溃 firefox
+  - 系统慢
+  - 修复没声音
+  - 修复wifi
+parameters:
+  - name: issue
+    required: true
+    description: "问题类型（中文）：没声音 / wifi / 没网 / 磁盘满 / 内存高 / cpu高 / 崩溃 / 系统慢"
+    extract: "(没声音|没声|声音|音频|喇叭|wifi|WiFi|无线网|没网|没网络|上不了网|网络不通|磁盘满|硬盘满|空间不足|磁盘不够|内存高|内存占用|内存满|内存泄漏|cpu高|cpu占用|cpu满|cpu负载|cpu过热|崩溃|闪退|打不开|无响应|卡死|系统慢|系统卡|电脑慢|电脑卡|卡顿|反应慢|启动慢)"
+    default: 没声音
+  - name: action
+    required: false
+    description: "操作：诊断（默认）/ 修复"
+    extract: "(修复|诊断|检查|看)"
+    default: "诊断"
+  - name: app
+    required: false
+    description: "出问题的应用名（仅 crash 场景用）"
+    extract: "(?:应用|程序|软件)\\s*(?:崩溃|闪退|打不开|无响应|卡死)?\\s*(\\S+)"
+    default: "firefox"
+# aliases：让 issue 的中文值命中 alias，使 match_by_text 的 alias_hit=1
+# 这样 troubleshoot 在与 cpu_monitor/disk_usage 等冲突时靠 alias_hit 取胜
+aliases:
+  没声音: [troubleshoot]
+  没声: [troubleshoot]
+  声音: [troubleshoot]
+  音频: [troubleshoot]
+  喇叭: [troubleshoot]
+  wifi: [troubleshoot]
+  WiFi: [troubleshoot]
+  无线网: [troubleshoot]
+  没网: [troubleshoot]
+  没网络: [troubleshoot]
+  上不了网: [troubleshoot]
+  网络不通: [troubleshoot]
+  磁盘满: [troubleshoot]
+  硬盘满: [troubleshoot]
+  空间不足: [troubleshoot]
+  磁盘不够: [troubleshoot]
+  内存高: [troubleshoot]
+  内存占用: [troubleshoot]
+  内存满: [troubleshoot]
+  内存泄漏: [troubleshoot]
+  cpu高: [troubleshoot]
+  cpu占用: [troubleshoot]
+  cpu满: [troubleshoot]
+  cpu负载: [troubleshoot]
+  cpu过热: [troubleshoot]
+  崩溃: [troubleshoot]
+  闪退: [troubleshoot]
+  打不开: [troubleshoot]
+  无响应: [troubleshoot]
+  卡死: [troubleshoot]
+  系统慢: [troubleshoot]
+  系统卡: [troubleshoot]
+  电脑慢: [troubleshoot]
+  电脑卡: [troubleshoot]
+  反应慢: [troubleshoot]
+  启动慢: [troubleshoot]
+steps:
+  # ============================================================
+  # issue: sound 没声音诊断（ALSA / PulseAudio / PipeWire / 内核声卡）
+  # ============================================================
+  - name: sound_check_alsa
+    type: command
+    condition: "{{issue}} in [没声音,没声,声音,音频,喇叭] && {{action}} != 修复"
+    description: 检查 ALSA Master 音量
+    command: "echo '=== ALSA Master ===' ; amixer sget Master 2>/dev/null | head -20 ; echo ; echo '=== ALSA contents ===' ; amixer contents 2>/dev/null | grep -A2 'Master' | head -20"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: sound_check_pulseaudio
+    type: command
+    condition: "{{issue}} in [没声音,没声,声音,音频,喇叭] && {{action}} != 修复"
+    description: 检查 PulseAudio 状态
+    command: "echo '=== PulseAudio info ===' ; pactl info 2>/dev/null | head -10 ; echo '=== 输出设备 ===' ; pactl list sinks short 2>/dev/null ; echo '=== 默认 sink 静音 ===' ; pactl get-sink-mute @DEFAULT_SINK@ 2>/dev/null"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: sound_check_pipewire
+    type: command
+    condition: "{{issue}} in [没声音,没声,声音,音频,喇叭] && {{action}} != 修复"
+    description: 检查 PipeWire 状态
+    command: "echo '=== PipeWire status ===' ; wpctl status 2>/dev/null | head -30 ; echo '=== 默认 sink 音量 ===' ; wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: sound_check_kernel
+    type: command
+    condition: "{{issue}} in [没声音,没声,声音,音频,喇叭] && {{action}} != 修复"
+    description: 检查内核声卡与音频服务
+    command: "echo '=== PCI 声卡 ===' ; lspci | grep -i audio ; echo '=== /proc/asound/cards ===' ; cat /proc/asound/cards 2>/dev/null ; echo '=== snd 模块 ===' ; lsmod | grep snd | head -10 ; echo '=== 音频进程 ===' ; ps aux | grep -E 'pulseaudio|pipewire|alsa' | grep -v grep ; echo '=== 用户音频服务 ===' ; systemctl --user status pulseaudio pipewire pipewire-pulse wireplumber 2>/dev/null | head -40"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: sound_fix_restart_pipewire
+    type: command
+    condition: "{{issue}} in [没声音,没声,声音,音频,喇叭] && {{action}} == 修复"
+    description: 重启 PipeWire 音频服务
+    command: "systemctl --user restart pipewire pipewire-pulse wireplumber"
+    safety: grey
+    confirm: "重启 PipeWire/PulseAudio/wireplumber 用户服务"
+    timeout: 15
+    on_failure: continue
+  - name: sound_fix_unmute
+    type: command
+    condition: "{{issue}} in [没声音,没声,声音,音频,喇叭] && {{action}} == 修复"
+    description: 取消默认 sink 静音 + 设置音量 50%
+    command: "pactl set-sink-mute @DEFAULT_SINK@ 0 && pactl set-sink-volume @DEFAULT_SINK@ 50%"
+    safety: grey
+    confirm: "取消默认输出设备静音并设置音量为 50%"
+    timeout: 10
+    on_failure: continue
+
+  # ============================================================
+  # issue: wifi 连不上 WiFi 诊断（网卡 / rfkill / NetworkManager / 驱动 / 日志）
+  # ============================================================
+  - name: wifi_check_ifaces
+    type: command
+    condition: "{{issue}} in [wifi,WiFi,无线网] && {{action}} != 修复"
+    description: 检查无线网卡与 rfkill
+    command: "echo '=== ip link ===' ; ip link show ; echo '=== iwconfig ===' ; iwconfig 2>/dev/null ; echo '=== iw dev ===' ; iw dev 2>/dev/null ; echo '=== rfkill ===' ; rfkill list 2>/dev/null"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: wifi_check_nm
+    type: command
+    condition: "{{issue}} in [wifi,WiFi,无线网] && {{action}} != 修复"
+    description: 检查 NetworkManager + 扫描 WiFi + 驱动 + 日志
+    command: "echo '=== NetworkManager 服务 ===' ; systemctl status NetworkManager 2>/dev/null | head -15 ; echo '=== WiFi 开关 ===' ; nmcli radio wifi 2>/dev/null ; echo '=== 设备状态 ===' ; nmcli device status 2>/dev/null ; echo '=== WiFi 列表 ===' ; nmcli device wifi list 2>/dev/null | head -20 ; echo '=== PCI 网卡 ===' ; lspci -k 2>/dev/null | grep -A3 -i network ; echo '=== 无线模块 ===' ; lsmod | grep -E 'iwl|ath|rtl|brcm' | head -10 ; echo '=== NetworkManager 日志（近 1 小时）===' ; journalctl -u NetworkManager --since '1 hour ago' 2>/dev/null | tail -30"
+    safety: white
+    timeout: 20
+    on_failure: continue
+  - name: wifi_fix_rfkill_unblock
+    type: command
+    condition: "{{issue}} in [wifi,WiFi,无线网] && {{action}} == 修复"
+    description: 解除无线网卡软阻止 + 打开 WiFi + 重启 NM
+    command: "rfkill unblock wifi && nmcli radio wifi on && pkexec systemctl restart NetworkManager"
+    safety: grey
+    confirm: "解除 rfkill 软阻止 + 打开 WiFi + 重启 NetworkManager（会断网）"
+    timeout: 30
+    on_failure: continue
+
+  # ============================================================
+  # issue: internet 没网诊断（网卡 / 网关 / DNS / HTTP / 路由）
+  # ============================================================
+  - name: internet_check_ifaces
+    type: command
+    condition: "{{issue}} in [没网,没网络,上不了网,网络不通] && {{action}} != 修复"
+    description: 检查网卡与路由
+    command: "echo '=== 网卡 ===' ; ip addr show ; echo '=== 路由 ===' ; ip route show"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: internet_ping_gateway
+    type: command
+    condition: "{{issue}} in [没网,没网络,上不了网,网络不通] && {{action}} != 修复"
+    description: ping 默认网关
+    command: "GW=$(ip route | grep default | awk '{print $3}' | head -1) ; if [ -n \"$GW\" ] ; then echo \"=== ping 网关 $GW ===\" ; ping -c 3 -W 2 $GW ; else echo '无默认网关' ; fi"
+    safety: white
+    timeout: 20
+    on_failure: continue
+  - name: internet_ping_public
+    type: command
+    condition: "{{issue}} in [没网,没网络,上不了网,网络不通] && {{action}} != 修复"
+    description: ping 公网 + 测 DNS + 测 HTTP + 路由追踪
+    command: "echo '=== ping 223.5.5.5 ===' ; ping -c 3 -W 2 223.5.5.5 ; echo '=== nslookup baidu.com ===' ; nslookup baidu.com 2>/dev/null | head -10 ; echo '=== resolvectl ===' ; resolvectl status 2>/dev/null | head -20 ; echo '=== /etc/resolv.conf ===' ; cat /etc/resolv.conf 2>/dev/null | grep -v '^#' ; echo '=== HTTP HEAD ===' ; curl -sI --max-time 5 https://www.baidu.com 2>/dev/null | head -5 || echo '无法访问 baidu' ; echo '=== traceroute 223.5.5.5 ===' ; traceroute -n -m 10 -w 2 223.5.5.5 2>/dev/null | head -15 || tracepath -n -m 10 223.5.5.5 2>/dev/null | head -15"
+    safety: white
+    timeout: 60
+    on_failure: continue
+  - name: internet_fix_restart
+    type: command
+    condition: "{{issue}} in [没网,没网络,上不了网,网络不通] && {{action}} == 修复"
+    description: 重启 NetworkManager + 清空 DNS 缓存
+    command: "pkexec systemctl restart NetworkManager && pkexec resolvectl flush-caches"
+    safety: grey
+    confirm: "重启 NetworkManager（会断网）+ 清空本地 DNS 缓存"
+    timeout: 30
+    on_failure: continue
+
+  # ============================================================
+  # issue: disk 磁盘满诊断（df / 大目录 / 大文件 / 日志 / 缓存）
+  # ============================================================
+  - name: disk_df
+    type: command
+    condition: "{{issue}} in [磁盘满,硬盘满,空间不足,磁盘不够] && {{action}} != 修复"
+    description: 磁盘分区使用情况
+    command: "echo '=== df -h ===' ; df -h | grep -v tmpfs | grep -v udev ; echo ; echo '=== df -i ===' ; df -i | grep -v tmpfs | grep -v udev | head -10"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: disk_top_dirs
+    type: command
+    condition: "{{issue}} in [磁盘满,硬盘满,空间不足,磁盘不够] && {{action}} != 修复"
+    description: 大目录 + 大文件 + journal + 缓存
+    command: "echo '=== / 下大目录 ===' ; pkexec du -h --max-depth=1 / 2>/dev/null | sort -rh | head -20 ; echo '=== 大文件（>500M）===' ; pkexec find / -type f -size +500M 2>/dev/null | head -20 ; echo '=== journal 占用 ===' ; journalctl --disk-usage 2>/dev/null ; echo '=== 缓存目录 ===' ; du -sh ~/.cache/ /var/cache/apt/archives/ /tmp/ /var/log/ 2>/dev/null"
+    safety: white
+    timeout: 120
+    on_failure: continue
+  - name: disk_fix_clean
+    type: command
+    condition: "{{issue}} in [磁盘满,硬盘满,空间不足,磁盘不够] && {{action}} == 修复"
+    description: 清理 apt 缓存 + 裁剪 journal + 清用户缓存
+    command: "pkexec apt clean && pkexec journalctl --vacuum-size=200M && rm -rf ~/.cache/*"
+    safety: grey
+    confirm: "清理 apt 下载缓存 + 裁剪 journal 日志到 200M + 清理用户缓存目录（~/.cache）"
+    timeout: 60
+    on_failure: continue
+
+  # ============================================================
+  # issue: memory 内存高诊断（free / top 进程 / swap / OOM）
+  # ============================================================
+  - name: memory_free
+    type: command
+    condition: "{{issue}} in [内存高,内存占用,内存满,内存泄漏] && {{action}} != 修复"
+    description: 内存与 Swap 使用情况 + meminfo
+    command: "echo '=== free -h ===' ; free -h ; echo ; echo '=== /proc/meminfo（前 12 行）===' ; cat /proc/meminfo | head -12 ; echo '=== Swap ===' ; swapon --show 2>/dev/null ; echo '=== /proc/swaps ===' ; cat /proc/swaps 2>/dev/null"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: memory_top_procs
+    type: command
+    condition: "{{issue}} in [内存高,内存占用,内存满,内存泄漏] && {{action}} != 修复"
+    description: Top 15 内存进程 + OOM 计分 + 内存压力 + OOM 日志
+    command: "echo '=== Top 15 内存进程 ===' ; ps -eo pid,user,pmem,rss,comm --sort=-rss | head -16 | awk '{printf \"%-8s %-10s %5s%% %10s KB  %s\\n\", $1,$2,$3,$4,$5}' ; echo '=== Top 10 OOM Score ===' ; ps -eo pid,oom_score,comm --sort=-oom_score 2>/dev/null | head -11 ; echo '=== 内存压力 ===' ; cat /proc/pressure/memory 2>/dev/null || echo '无内存压力信息' ; echo ; echo '=== OOM 日志（近 1 小时）===' ; journalctl --since '1 hour ago' 2>/dev/null | grep -iE 'out of memory|oom-killer|killed process' | tail -10"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: memory_fix_drop_caches
+    type: command
+    condition: "{{issue}} in [内存高,内存占用,内存满,内存泄漏] && {{action}} == 修复"
+    description: 释放 page cache / dentries / inodes
+    command: "sync && pkexec sh -c 'echo 3 > /proc/sys/vm/drop_caches'"
+    safety: grey
+    confirm: "释放内核页缓存与 inode/dentry 缓存（不影响运行中进程）"
+    timeout: 30
+    on_failure: continue
+
+  # ============================================================
+  # issue: cpu CPU 高诊断（top / mpstat / 负载 / 频率 / 温度 / Top 进程）
+  # ============================================================
+  - name: cpu_top
+    type: command
+    condition: "{{issue}} in [cpu高,cpu占用,cpu满,cpu负载,cpu过热] && {{action}} != 修复"
+    description: CPU 使用率 + 各核心 + 负载
+    command: "echo '=== CPU 使用率（瞬时）===' ; top -bn1 | grep '^%Cpu' ; echo ; echo '=== 各核心使用率 ===' ; mpstat -P ALL 1 1 2>/dev/null | tail -n +4 || cat /proc/stat | grep '^cpu[0-9]' | awk '{print \"cpu\"$1\" user=\"$2\" nice=\"$3\" system=\"$4\" idle=\"$5}' ; echo '=== uptime ===' ; uptime ; echo ; echo '=== /proc/loadavg ===' ; cat /proc/loadavg ; echo ; echo '=== 核心数 ===' ; nproc"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: cpu_top_procs
+    type: command
+    condition: "{{issue}} in [cpu高,cpu占用,cpu满,cpu负载,cpu过热] && {{action}} != 修复"
+    description: Top 15 CPU 进程 + 频率 + 温度 + 压力
+    command: "echo '=== Top 15 CPU 进程 ===' ; ps -eo pid,user,pcpu,pmem,comm --sort=-pcpu | head -16 | awk '{printf \"%-8s %-10s %5s%% %5s%%  %s\\n\", $1,$2,$3,$4,$5}' ; echo '=== CPU 频率 ===' ; cat /proc/cpuinfo | grep -E 'cpu MHz|model name' | head -10 ; echo '=== 当前频率 ===' ; for f in /sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq ; do [ -f \"$f\" ] && echo \"$(dirname $f | xargs basename) : $(($(cat $f)/1000)) MHz\" ; done 2>/dev/null | head -8 ; echo '=== CPU 温度 ===' ; (sensors 2>/dev/null | grep -iE 'core|temp|cpu|tdie|tctl' | head -10) || (cat /sys/class/thermal/thermal_zone*/temp 2>/dev/null | awk '{printf \"%.1f°C\\n\", $1/1000}') || echo 'sensors 未安装或无温度传感器' ; echo '=== CPU 压力 ===' ; cat /proc/pressure/cpu 2>/dev/null || echo '无 CPU 压力信息'"
+    safety: white
+    timeout: 10
+    on_failure: continue
+
+  # ============================================================
+  # issue: crash 应用崩溃诊断（进程 / journal / coredump / 依赖）
+  # ============================================================
+  - name: crash_check_process
+    type: command
+    condition: "{{issue}} in [崩溃,闪退,打不开,无响应,卡死] && {{action}} != 修复"
+    description: 检查目标进程 + journal 崩溃记录 + coredump
+    command: "echo '=== {{app|default:firefox}} 进程 ===' ; ps aux | grep -i '{{app|default:firefox}}' | grep -v grep || echo '未找到 {{app|default:firefox}} 进程' ; echo '=== journal 中 {{app|default:firefox}} 崩溃记录（近 24 小时）===' ; journalctl --since '24 hours ago' 2>/dev/null | grep -iE '{{app|default:firefox}}.*(segfault|abort|killed|crash)|{{app|default:firefox}}.*(段错误|崩溃|终止)' | tail -30 || echo '未找到崩溃记录' ; echo '=== coredump 列表 ===' ; coredumpctl list 2>/dev/null | grep -i '{{app|default:firefox}}' | tail -10 || echo '无 coredump 或 coredumpctl 未安装'"
+    safety: white
+    timeout: 15
+    on_failure: continue
+  - name: crash_check_deps
+    type: command
+    condition: "{{issue}} in [崩溃,闪退,打不开,无响应,卡死] && {{action}} != 修复"
+    description: 检查依赖库 + 版本 + dmesg
+    command: "echo '=== which {{app|default:firefox}} ===' ; which {{app|default:firefox}} 2>/dev/null ; echo ; echo '=== ldd 依赖 ===' ; ldd $(which {{app|default:firefox}} 2>/dev/null) 2>/dev/null | head -20 || echo '无法解析依赖' ; echo '=== 版本 ===' ; {{app|default:firefox}} --version 2>/dev/null || echo '无法获取版本' ; echo '=== dmesg 中 {{app|default:firefox}} 相关 ===' ; pkexec dmesg 2>/dev/null | grep -iE '{{app|default:firefox}}|segfault|oom' | tail -10 || echo '无相关内核日志'"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: crash_fix_clear_cache
+    type: command
+    condition: "{{issue}} in [崩溃,闪退,打不开,无响应,卡死] && {{action}} == 修复"
+    description: 清理应用配置缓存（备份后）
+    command: "CFG_DIR=$(find ~/.config ~/.cache -maxdepth 2 -iname '*{{app|default:firefox}}*' 2>/dev/null | head -5) ; if [ -n \"$CFG_DIR\" ] ; then echo \"发现配置/缓存：$CFG_DIR\" ; echo '（备份到 ~/lihua-backup/ 后再删除）' ; mkdir -p ~/lihua-backup ; for d in $CFG_DIR ; do [ -e \"$d\" ] && cp -r \"$d\" ~/lihua-backup/ 2>/dev/null && rm -rf \"$d\" ; done ; else echo '未找到 {{app|default:firefox}} 配置目录' ; fi"
+    safety: grey
+    confirm: "清理 {{app|default:firefox}} 配置/缓存目录（备份到 ~/lihua-backup/）"
+    timeout: 30
+    on_failure: continue
+  - name: crash_fix_reinstall
+    type: command
+    condition: "{{issue}} in [崩溃,闪退,打不开,无响应,卡死] && {{action}} == 修复"
+    description: 重新安装应用（apt 或 flatpak）
+    command: "pkexec apt install --reinstall -y {{app|default:firefox}} 2>/dev/null || flatpak reinstall -y flathub {{app|default:firefox}} 2>/dev/null || echo '重装失败，请手动检查'"
+    safety: grey
+    confirm: "重新安装 {{app|default:firefox}}（apt 或 flatpak）"
+    timeout: 300
+    on_failure: continue
+
+  # ============================================================
+  # issue: slow 系统慢诊断（负载 / CPU+内存 / IO / 启动项 / 启动时间）
+  # ============================================================
+  - name: slow_loadavg
+    type: command
+    condition: "{{issue}} in [系统慢,系统卡,电脑慢,电脑卡,卡顿,反应慢,启动慢] && {{action}} != 修复"
+    description: 系统负载 + CPU/内存瞬时 + Top 进程
+    command: "echo '=== uptime ===' ; uptime ; echo ; echo '=== /proc/loadavg ===' ; cat /proc/loadavg ; echo ; echo '=== 核心数 ===' ; nproc ; echo '=== CPU 瞬时 ===' ; top -bn1 | grep '^%Cpu' ; echo ; echo '=== free -h ===' ; free -h ; echo ; echo '=== Top 10 CPU 进程 ===' ; ps -eo pid,user,pcpu,pmem,comm --sort=-pcpu | head -11"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: slow_io
+    type: command
+    condition: "{{issue}} in [系统慢,系统卡,电脑慢,电脑卡,卡顿,反应慢,启动慢] && {{action}} != 修复"
+    description: 磁盘 IO + 启动项 + 启动耗时
+    command: "echo '=== iostat ===' ; iostat -xz 1 2 2>/dev/null | tail -20 || echo 'iostat 未安装' ; echo ; echo '=== IO 压力 ===' ; cat /proc/pressure/io 2>/dev/null || echo '无 IO 压力信息' ; echo '=== enabled 服务 ===' ; systemctl list-unit-files --state=enabled --type=service 2>/dev/null | head -30 ; echo ; echo '=== 用户级 enabled 服务 ===' ; systemctl --user list-unit-files --state=enabled --type=service 2>/dev/null | head -15 ; echo '=== 启动耗时 ===' ; systemd-analyze 2>/dev/null ; echo ; echo '=== 启动最慢的 15 个单元 ===' ; systemd-analyze blame 2>/dev/null | head -15 ; echo ; echo '=== 关键路径 ===' ; systemd-analyze critical-chain 2>/dev/null | head -30"
+    safety: white
+    timeout: 15
+    on_failure: continue
+  - name: slow_fix_hint
+    type: command
+    condition: "{{issue}} in [系统慢,系统卡,电脑慢,电脑卡,卡顿,反应慢,启动慢] && {{action}} == 修复"
+    description: 提示用户手动选择禁用项（只读建议，不修改系统）
+    command: "echo '请根据上面 systemd-analyze blame 输出，手动禁用不需要的服务：' ; echo '  pkexec systemctl disable <服务名>' ; echo '常用可考虑禁用的服务：NetworkManager-wait-online.service、apt-daily.service、fwupd.service'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+
+  # ============================================================
+  # 通知（所有 issue 共用）
+  # ============================================================
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '诊断完成（{{issue}} / {{action}}）'"

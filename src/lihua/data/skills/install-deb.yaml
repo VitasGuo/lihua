@@ -1,0 +1,53 @@
+name: install_deb
+description: 安装本地 .deb 软件包
+version: 0.1
+category: install
+author: lihua
+triggers:
+  - 装 deb
+  - 安装 deb
+  - 装 deb 包
+  - 安装 deb 包
+  - 装 deb 文件
+  - 安装 deb 文件
+  - 装 deb 安装包
+  - deb 安装
+  - deb 安装包
+  - 装 .deb
+  - 安装 .deb
+  - 装本地包
+  - 安装本地包
+  - 装本地软件包
+examples:
+  - 装 deb /path/to/package.deb
+  - 装 .deb ~/Downloads/google-chrome.deb
+parameters:
+  - name: deb_path
+    required: true
+    description: .deb 文件路径
+    extract: "(/[^\\s]+\\.deb|~[^\\s]+\\.deb|\\./[^\\s]+\\.deb|[^\\s]+\\.deb)"
+steps:
+  - name: verify_file
+    type: verify
+    description: 检查文件是否存在
+    command: "FILE='{{deb_path}}' ; FILE=$(eval echo \"$FILE\") ; if [ -f \"$FILE\" ] ; then echo \"找到文件：$FILE\" ; dpkg-deb -I \"$FILE\" 2>/dev/null | head -10 ; else echo \"文件不存在：$FILE\" ; exit 1 ; fi"
+    on_failure: stop
+  - name: install_deb
+    type: command
+    description: 安装 deb 包及其依赖
+    command: "FILE='{{deb_path}}' ; FILE=$(eval echo \"$FILE\") ; pkexec apt install -y \"$FILE\""
+    safety: grey
+    confirm: "安装 deb 包「{{deb_path}}」"
+    timeout: 300
+    on_failure: stop
+  - name: fix_broken
+    type: command
+    description: 修复可能的依赖问题
+    command: "pkexec apt -f install -y 2>/dev/null || true"
+    safety: grey
+    confirm: "修复依赖问题"
+    timeout: 120
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' 'deb 包已安装：{{deb_path}}'"

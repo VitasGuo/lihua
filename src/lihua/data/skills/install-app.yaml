@@ -1,0 +1,179 @@
+name: install_app
+description: 安装应用程序（flatpak / apt / snap 自动选择）
+version: 0.1
+category: mvp
+author: lihua
+triggers:
+  - 装软件
+  - 安装软件
+  - 安装应用
+  - 装个
+  - 安装个
+  - 装一下
+  - 安装一下
+  - 装一个
+  - 安装一个
+  - 装个应用
+  - 装
+  - 安装
+examples:
+  - 装QQ
+  - 装个微信
+  - 安装 vscode
+  - 装个火狐浏览器
+parameters:
+  - name: target
+    required: true
+    description: 应用名称
+    extract: "(?:装|安装|安一个|安一下|安装一个|装一个|装个|安装个|装一下|安装一下)\\s*(?:个|一个)?\\s*(?:应用|软件|app|application|程序)?\\s*(.+)"
+# 中文应用名 → 候选包名（按优先级排序）
+# 命名约定：
+#   com.xxx / org.xxx / io.xxx → flatpak 应用 ID
+#   其他 → apt 包名
+aliases:
+  QQ: ["com.qq.QQ", "linuxqq"]
+  qq: ["com.qq.QQ", "linuxqq"]
+  微信: ["com.tencent.WeChat", "wechat"]
+  wechat: ["com.tencent.WeChat", "wechat"]
+  vscode: ["com.visualstudio.code", "code"]
+  visual studio code: ["com.visualstudio.code", "code"]
+  vscode code: ["com.visualstudio.code", "code"]
+  火狐: ["org.mozilla.firefox", "firefox"]
+  火狐浏览器: ["org.mozilla.firefox", "firefox"]
+  firefox: ["org.mozilla.firefox", "firefox"]
+  chrome: ["com.google.chrome", "google-chrome"]
+  谷歌浏览器: ["com.google.chrome", "google-chrome"]
+  google chrome: ["com.google.chrome", "google-chrome"]
+  chromium: ["org.chromium.chromium", "chromium-browser"]
+  edge: ["com.microsoft.edge", "microsoft-edge-stable"]
+  microsoft edge: ["com.microsoft.edge", "microsoft-edge-stable"]
+  spotify: ["com.spotify.music", "spotify"]
+  网易云音乐: ["com.netease.cloudmusic", "netease-cloud-music"]
+  网易云: ["com.netease.cloudmusic", "netease-cloud-music"]
+  wps: ["com.wps.office", "wps-office"]
+  wps office: ["com.wps.office", "wps-office"]
+  wps办公: ["com.wps.office", "wps-office"]
+  telegram: ["org.telegram.desktop", "telegram-desktop"]
+  电报: ["org.telegram.desktop", "telegram-desktop"]
+  电报telegram: ["org.telegram.desktop", "telegram-desktop"]
+  discord: ["com.discordapp.discord", "discord"]
+  vlc: ["org.videolan.vlc", "vlc"]
+  obs: ["com.obsproject.studio", "obs-studio"]
+  obs studio: ["com.obsproject.studio", "obs-studio"]
+  gimp: ["org.gimp.gimp", "gimp"]
+  blender: ["org.blender.blender", "blender"]
+  inkscape: ["org.inkscape.inkscape", "inkscape"]
+  krita: ["org.kde.krita", "krita"]
+  audacity: ["org.audacityteam.audacity", "audacity"]
+  ffmpeg: ["ffmpeg"]
+  docker: ["docker.io", "docker-ce", "docker"]
+  docker desktop: ["docker-desktop"]
+  node: ["nodejs", "node"]
+  nodejs: ["nodejs"]
+  npm: ["npm"]
+  pnpm: ["pnpm"]
+  yarn: ["yarn"]
+  bun: ["bun"]
+  deno: ["deno"]
+  python: ["python3"]
+  python3: ["python3"]
+  pip: ["python3-pip"]
+  git: ["git"]
+  gh: ["gh"]
+  curl: ["curl"]
+  wget: ["wget"]
+  7z: ["7zip", "p7zip-full"]
+  7zip: ["7zip", "p7zip-full"]
+  foxit: ["foxitreader"]
+  福昕: ["foxitreader"]
+  钉钉: ["com.alibabainc.dingtalk"]
+  dingtalk: ["com.alibabainc.dingtalk"]
+  飞书: ["com.bytedance.feishu", "feishu"]
+  feishu: ["com.bytedance.feishu", "feishu"]
+  lark: ["com.bytedance.feishu", "feishu"]
+  notion: ["notion-app"]
+  obsidian: ["md.obsidian.obsidian"]
+  typora: ["typora"]
+  sublime: ["sublime-text"]
+  sublime text: ["sublime-text"]
+  postman: ["com.postman.postman", "postman"]
+  dbeaver: ["io.dbeaver.dbeaver", "dbeaver"]
+  steam: ["com.valvesoftware.steam", "steam"]
+  gedit: ["gedit"]
+  vim: ["vim"]
+  neovim: ["neovim"]
+  nvim: ["neovim"]
+  emacs: ["emacs"]
+  vscode-insiders: ["com.visualstudio.code-insiders", "code-insiders"]
+  cursor: ["cursor"]
+  jetbrains toolbox: ["jetbrains-toolbox"]
+  pycharm: ["pycharm-community", "com.jetbrains.pycharm-community"]
+  intellij idea: ["intellij-idea-community", "com.jetbrains.intellij-idea-community"]
+  webstorm: ["webstorm", "com.jetbrains.webstorm"]
+  clion: ["clion", "com.jetbrains.clion"]
+  goland: ["goland", "com.jetbrains.goland"]
+  rustrover: ["rustrover", "com.jetbrains.rustrover"]
+  android studio: ["android-studio", "com.google.androidstudio"]
+  xmind: ["xmind"]
+  zotero: ["zotero"]
+  gparted: ["gparted"]
+  htop: ["htop"]
+  btop: ["btop"]
+  neofetch: ["neofetch"]
+  fastfetch: ["fastfetch"]
+  tilix: ["tilix"]
+  alacritty: ["alacritty"]
+  kitty: ["kitty"]
+  wezterm: ["wezterm"]
+  gnome tweaks: ["gnome-tweaks"]
+  gnome-tweaks: ["gnome-tweaks"]
+  调整: ["gnome-tweaks"]
+  dconf editor: ["dconf-editor"]
+  extension manager: ["com.mattjakeman.extension-manager", "gnome-shell-extension-manager"]
+  洛雪: ["lxmusic", "org.lxmusic.lxmusic"]
+  lxmusic: ["lxmusic", "org.lxmusic.lxmusic"]
+  qq音乐: ["qqmusic", "com.tencent.qqmusic"]
+  酷狗: ["kugou", "com.kugou.kugou"]
+  酷我: ["kuwo", "com.kuwo.kuwo"]
+steps:
+  - name: resolve
+    type: resolve_package
+    description: 解析包名和安装方式（flatpak > apt > snap）
+    prefer: [flatpak, apt, snap]
+  - name: install_via_flatpak
+    type: command
+    condition: "{{package_type}} == flatpak"
+    # 不显式指定 remote：用户系统可能有 flathub (system) + flathub (user) 同名，
+    # 指定 remote 名会触发 "Multiple remotes match" 错误。
+    # 让 flatpak 自动从所有 remote 搜索匹配的应用 ID。
+    command: "flatpak install -y --noninteractive {{package}}"
+    safety: grey
+    confirm: "安装 {{target}}（通过 Flatpak，会下载若干数据）"
+    timeout: 600
+    on_failure: stop
+  - name: install_via_apt
+    type: command
+    condition: "{{package_type}} == apt"
+    command: "pkexec apt install -y {{package}}"
+    safety: grey
+    confirm: "安装 {{target}}（通过 apt，需要管理员权限）"
+    timeout: 600
+    on_failure: stop
+  - name: install_via_snap
+    type: command
+    condition: "{{package_type}} == snap"
+    command: "pkexec snap install {{package}}"
+    safety: grey
+    confirm: "安装 {{target}}（通过 Snap，需要管理员权限）"
+    timeout: 600
+    on_failure: stop
+  - name: verify
+    type: verify
+    description: "检查安装结果（v0.7.15: 加 snap 检查 + on_failure=stop 防谎报）"
+    # 用 target 检查（不是 package），覆盖 snap/flatpak/apt 三种安装方式
+    # on_failure=stop：失败就停止，不执行 notify，run_skill 返回 success=False
+    command: "which '{{target}}' 2>/dev/null || flatpak list --columns=application 2>/dev/null | grep -i '{{target}}' || snap list 2>/dev/null | grep -i '{{target}}' || dpkg -l 2>/dev/null | grep -i '{{target}}'"
+    on_failure: stop
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '{{target}} 已安装完成'"

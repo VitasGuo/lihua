@@ -1,0 +1,61 @@
+name: file_compress
+description: 压缩文件（支持 zip/tar.gz/tar.bz2/7z）
+version: 0.1
+category: file
+author: lihua
+triggers:
+  - 压缩
+  - 打包
+  - 压一下
+  - 打个包
+  - 压缩成
+  - 打包成
+  - compress
+examples:
+  - 压缩 file.zip
+  - 把 folder 打包成 tar.gz
+parameters:
+  - name: source
+    required: true
+    description: 源文件或目录
+    extract: "(?:压缩|打包|压一下|打个包|zip|tar|gzip|compress)\\s+(.+?)\\s*(?:成|为|to)\\s*(\\S+)?\\s*$|(?:压缩|打包|压一下|打个包)\\s+(.+?)\\s*$"
+  - name: format
+    required: false
+    description: 压缩格式（zip/tar.gz/tar.bz2/7z）
+    extract: "(?:压缩|打包|压一下|打个包|zip|tar|gzip|compress)\\s+(.+?)\\s*(?:成|为|to)\\s*(\\S+)"
+steps:
+  - name: compress_zip
+    type: command
+    condition: "{{format}} == zip || {{format}} == "
+    description: 压缩为 zip
+    command: "zip -r '{{source}}.zip' '{{source}}'"
+    safety: white
+    timeout: 600
+    on_failure: continue
+  - name: compress_tar_gz
+    type: command
+    condition: "{{format}} == tar.gz || {{format}} == tgz"
+    description: 压缩为 tar.gz
+    command: "tar -czf '{{source}}.tar.gz' '{{source}}'"
+    safety: white
+    timeout: 600
+    on_failure: continue
+  - name: compress_tar_bz2
+    type: command
+    condition: "{{format}} == tar.bz2 || {{format}} == tbz2"
+    description: 压缩为 tar.bz2
+    command: "tar -cjf '{{source}}.tar.bz2' '{{source}}'"
+    safety: white
+    timeout: 600
+    on_failure: continue
+  - name: compress_7z
+    type: command
+    condition: "{{format}} == 7z"
+    description: 压缩为 7z
+    command: "7z a '{{source}}.7z' '{{source}}'"
+    safety: white
+    timeout: 600
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '压缩完成：{{source}}'"

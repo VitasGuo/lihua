@@ -1,0 +1,68 @@
+name: file_association
+description: 设置默认应用（文件关联）
+version: 0.1
+category: file
+author: lihua
+triggers:
+  - 文件关联
+  - 关联到
+  - 用什么打开
+  - 默认打开方式
+  - mime
+  - 默认打开
+examples:
+  - 用什么打开 pdf
+  - 把 .pdf 关联到 evince
+parameters:
+  - name: file_type
+    required: true
+    description: 文件类型（如 .pdf / text/plain / inode/directory）
+    extract: "(?:默认|把|将)\\s*(?:浏览器|browser)\\s*$|(?:默认|把|将)\\s*(?:编辑器|editor)\\s*$|(?:默认|把|将)\\s*(?:播放器|player)\\s*$|(?:默认|把|将)\\s*(?:图片查看器|image viewer)\\s*$|(?:默认|把|将)\\s*(?:终端|terminal)\\s*$|(?:关联|设置|set)\\s+(\\S+)\\s+(?:到|为|to)\\s+(\\S+)"
+  - name: app
+    required: false
+    description: 应用 desktop 文件名
+    extract: "(?:默认|把|将)\\s*(\\S+)\\s+(?:设为|设成|改成|为|设)\\s*(?:默认)?\\s*(?:浏览器|编辑器|播放器|图片查看器|终端|应用|程序)"
+steps:
+  - name: list_default
+    type: command
+    condition: "{{app}} == "
+    description: 列出当前默认应用
+    command: "xdg-mime query default x-scheme-handler/http && xdg-mime query default text/plain && xdg-mime query default inode/directory"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: set_browser
+    type: command
+    condition: "{{file_type}} == browser"
+    description: 设置默认浏览器
+    command: "xdg-mime default {{app}}.desktop x-scheme-handler/http x-scheme-handler/https text/html"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: set_editor
+    type: command
+    condition: "{{file_type}} == editor"
+    description: 设置默认编辑器
+    command: "xdg-mime default {{app}}.desktop text/plain"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: set_player
+    type: command
+    condition: "{{file_type}} == player"
+    description: 设置默认播放器
+    command: "xdg-mime default {{app}}.desktop video/mp4 video/x-matroska audio/mpeg"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: set_terminal
+    type: command
+    condition: "{{file_type}} == terminal"
+    description: 设置默认终端
+    command: "gsettings set org.gnome.desktop.default-applications.terminal exec '{{app}}'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '默认应用已设置'"

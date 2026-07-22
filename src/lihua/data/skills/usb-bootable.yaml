@@ -1,0 +1,52 @@
+name: usb_bootable
+description: 制作 USB 启动盘（dd 写入 ISO，高风险：会擦除目标设备所有数据，不可恢复）
+version: 0.1
+category: file_adv
+author: lihua
+triggers:
+  - 制作启动盘
+  - 做启动盘
+  - 做系统盘
+  - 制作系统盘
+  - 写入U盘
+  - 烧录U盘
+  - dd写入
+  - 启动盘制作
+examples:
+  - 制作启动盘 ubuntu.iso 到 /dev/sdb
+  - 烧录U盘 fedora.iso 到 /dev/sdc
+parameters:
+  - name: iso
+    required: true
+    description: ISO 文件路径
+    extract: "(?:制作|做|写入|烧录).*?(?:启动盘|系统盘|U盘).*?(.+?\\.iso)"
+  - name: device
+    required: true
+    description: 目标设备（如 /dev/sdb，注意是整个设备不是分区）
+    extract: "(?:到|写入)\\s+(/dev/sd[a-z])"
+steps:
+  - name: check_iso
+    type: command
+    description: 检查 ISO 文件是否存在
+    command: "ls -la '{{iso}}'"
+    safety: white
+    timeout: 5
+    on_failure: stop
+  - name: check_device
+    type: command
+    description: 检查目标设备是否存在
+    command: "lsblk '{{device}}' 2>/dev/null"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: dd_write
+    type: command
+    description: 用 dd 将 ISO 写入设备（高风险，不可恢复，会擦除目标设备所有数据）
+    command: "pkexec dd if='{{iso}}' of='{{device}}' bs=4M status=progress && sync"
+    safety: grey
+    confirm: "⚠️ 危险操作！将 ISO {{iso}} 写入 {{device}}（设备上所有数据将被擦除，不可恢复！）"
+    timeout: 1800
+    on_failure: stop
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '启动盘制作完成：{{iso}} → {{device}}'"

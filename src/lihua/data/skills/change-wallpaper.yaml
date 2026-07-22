@@ -1,0 +1,51 @@
+name: change_wallpaper
+description: 更换桌面壁纸
+version: 0.1
+category: desktop
+author: lihua
+triggers:
+  - 换壁纸
+  - 改壁纸
+  - 设壁纸
+  - 设置壁纸
+  - 换桌面
+  - 改桌面
+  - 桌面背景
+  - 壁纸
+  - wallpaper
+examples:
+  - 换壁纸 /path/to/img.jpg
+  - 换壁纸
+parameters:
+  - name: image_path
+    required: false
+    description: 图片路径
+    extract: "(/[^\\s]+|~[^\\s]+|\\./[^\\s]+)"
+steps:
+  - name: show_wallpaper
+    type: command
+    condition: "{{image_path}} == "
+    description: 显示当前壁纸并提示
+    command: "echo '=== 当前壁纸 ===' ; gsettings get org.gnome.desktop.background picture-uri 2>/dev/null ; gsettings get org.gnome.desktop.background picture-uri-dark 2>/dev/null ; echo ; echo '用法：换壁纸 /path/to/image.jpg' ; echo ; echo '=== 壁纸目录 ===' ; ls /usr/share/backgrounds/ 2>/dev/null | head -10"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: set_wallpaper_gnome
+    type: command
+    condition: "{{image_path}} != "
+    description: 设置 GNOME 壁纸
+    command: "FILE='{{image_path}}' ; FILE=$(eval echo \"$FILE\") ; if [ ! -f \"$FILE\" ] ; then echo \"文件不存在：$FILE\" ; exit 1 ; fi ; URI=\"file://$FILE\" ; gsettings set org.gnome.desktop.background picture-uri \"$URI\" ; gsettings set org.gnome.desktop.background picture-uri-dark \"$URI\" ; gsettings set org.gnome.desktop.background picture-options 'zoom' ; echo \"壁纸已设为：$FILE\""
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: set_wallpaper_sway
+    type: command
+    condition: "{{image_path}} != "
+    description: 兼容 Sway / swaybg
+    command: "FILE='{{image_path}}' ; FILE=$(eval echo \"$FILE\") ; if command -v swaybg >/dev/null 2>&1 ; then pkill swaybg 2>/dev/null ; swaybg -i \"$FILE\" -m fill >/dev/null 2>&1 & disown ; echo 'Sway 壁纸已设置' ; fi"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '壁纸已更换'"

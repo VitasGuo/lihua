@@ -1,0 +1,149 @@
+name: audio_control
+description: 音频控制（音量 / 静音 / 输入输出设备 / 播放控制）
+version: 0.1
+category: hardware
+author: lihua
+triggers:
+  - 音量
+  - 调音量
+  - 改音量
+  - 大声点
+  - 小声点
+  - 静音
+  - 取消静音
+  - 麦克风
+  - 麦克风音量
+  - 麦克风静音
+  - 输出设备
+  - 输入设备
+  - 音频设备
+  - 看音频
+  - 查看音频
+  - 声卡
+  - 播放控制
+  - 上一首
+  - 下一首
+  - 暂停
+  - 播放
+  - 停止播放
+examples:
+  - 调音量 50%
+  - 静音
+  - 大声点
+parameters:
+  - name: action
+    required: false
+    description: 操作（volume / mute / mic / list / play / pause / next / prev）
+    extract: "(音量|静音|麦克风|输出设备|输入设备|音频|声卡|播放控制|播放|暂停|上一首|下一首|停止|大声|小声)"
+  - name: value
+    required: false
+    description: 音量值（百分比或 +/-）
+    extract: "(\\d+%?|\\+\\d+|-\\d+|大声|小声)"
+steps:
+  - name: show_audio
+    type: command
+    condition: "{{action}} ==  || {{action}} == 音频 || {{action}} == 声卡"
+    description: 查看音频设备状态
+    command: "echo '=== 输出设备 ===' ; pactl list sinks short 2>/dev/null || wpctl status 2>/dev/null | head -20 ; echo ; echo '=== 输入设备 ===' ; pactl list sources short 2>/dev/null ; echo ; echo '=== 默认设备 ===' ; pactl get-default-sink 2>/dev/null ; pactl get-default-source 2>/dev/null"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: set_volume
+    type: command
+    condition: "{{action}} == 音量 && {{value}} !=  && {{value}} != 大声 && {{value}} != 小声"
+    description: 设置音量
+    command: "VAL='{{value}}' ; case \"$VAL\" in *%) pactl set-sink-volume @DEFAULT_SINK@ \"$VAL\" ;; *) pactl set-sink-volume @DEFAULT_SINK@ \"${VAL}%\" ;; esac"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: volume_up
+    type: command
+    condition: "{{action}} == 音量 && {{value}} == 大声"
+    description: 音量增加 10%
+    command: "pactl set-sink-volume @DEFAULT_SINK@ +10%"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: volume_down
+    type: command
+    condition: "{{action}} == 音量 && {{value}} == 小声"
+    description: 音量减少 10%
+    command: "pactl set-sink-volume @DEFAULT_SINK@ -10%"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: volume_show
+    type: command
+    condition: "{{action}} == 音量 && {{value}} == "
+    description: 显示当前音量
+    command: "echo '=== 当前音量 ===' ; pactl get-sink-volume @DEFAULT_SINK@ 2>/dev/null ; echo '=== 是否静音 ===' ; pactl get-sink-mute @DEFAULT_SINK@ 2>/dev/null"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: mute
+    type: command
+    condition: "{{action}} == 静音"
+    description: 切换静音
+    command: "pactl set-sink-mute @DEFAULT_SINK@ toggle"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: mic_mute
+    type: command
+    condition: "{{action}} == 麦克风"
+    description: 切换麦克风静音
+    command: "echo '=== 麦克风状态 ===' ; pactl get-source-mute @DEFAULT_SOURCE@ 2>/dev/null ; pactl set-source-mute @DEFAULT_SOURCE@ toggle && echo '已切换麦克风静音'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: list_output
+    type: command
+    condition: "{{action}} == 输出设备"
+    description: 列出输出设备
+    command: "echo '=== 输出设备 ===' ; pactl list sinks short ; echo '当前默认：' ; pactl get-default-sink"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: list_input
+    type: command
+    condition: "{{action}} == 输入设备"
+    description: 列出输入设备
+    command: "echo '=== 输入设备 ===' ; pactl list sources short ; echo '当前默认：' ; pactl get-default-source"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: media_play
+    type: command
+    condition: "{{action}} == 播放 || {{action}} == 暂停"
+    description: 播放/暂停媒体
+    command: "playerctl play-pause 2>/dev/null || echo '无可用播放器'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: media_next
+    type: command
+    condition: "{{action}} == 下一首"
+    description: 下一首
+    command: "playerctl next 2>/dev/null || echo '无可用播放器'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: media_prev
+    type: command
+    condition: "{{action}} == 上一首"
+    description: 上一首
+    command: "playerctl previous 2>/dev/null || echo '无可用播放器'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: media_stop
+    type: command
+    condition: "{{action}} == 停止"
+    description: 停止播放
+    command: "playerctl stop 2>/dev/null || echo '无可用播放器'"
+    safety: white
+    timeout: 5
+    on_failure: continue
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '音频操作完成'"

@@ -1,0 +1,66 @@
+name: apt_repository
+description: apt 仓库管理（添加/删除/查看仓库）
+version: 0.1
+category: mirror
+author: lihua
+triggers:
+  - apt仓库
+  - 添加仓库
+  - 删除仓库
+  - 移除仓库
+  - 查看仓库
+  - apt repo
+  - 删源
+  - 软件源
+  - apt源管理
+examples:
+  - 添加仓库 ppa:obsproject/obs-studio
+  - 查看仓库
+  - 删除仓库 ppa:obsproject/obs-studio
+parameters:
+  - name: action
+    required: false
+    description: 操作（添加/删除/移除/查看/列表）
+    extract: "(添加|删除|移除|查看|列表)"
+  - name: repo
+    required: false
+    description: 仓库地址（如 ppa:xxx/yyy 或 deb 行）
+    extract: "(?:添加|删除|移除)\\s*(?:仓库\\s+)?(.+?)\\s*$"
+steps:
+  - name: list_repos
+    type: command
+    condition: "{{action}} == 查看 || {{action}} == 列表 || {{action}} == "
+    description: 列出当前 apt 仓库
+    command: "echo '=== /etc/apt/sources.list ===' ; cat /etc/apt/sources.list 2>/dev/null | grep -v '^#' | grep -v '^$' ; echo ; echo '=== /etc/apt/sources.list.d/ ===' ; grep -rH '' /etc/apt/sources.list.d/ 2>/dev/null | grep -v '^#' | grep -v ':#'"
+    safety: white
+    timeout: 10
+    on_failure: continue
+  - name: apt_policy
+    type: command
+    condition: "{{action}} == 查看 || {{action}} == 列表"
+    description: 显示 apt 优先级概览
+    command: "apt policy 2>/dev/null | head -50"
+    safety: white
+    timeout: 15
+    on_failure: continue
+  - name: add_repo
+    type: command
+    condition: "{{action}} == 添加 && {{repo}} != "
+    description: 添加 apt 仓库
+    command: "pkexec add-apt-repository -y '{{repo}}' && pkexec apt update"
+    safety: grey
+    confirm: "添加 apt 仓库「{{repo}}」并刷新索引"
+    timeout: 300
+    on_failure: stop
+  - name: remove_repo
+    type: command
+    condition: "{{action}} == 删除 && {{repo}} !=  || {{action}} == 移除 && {{repo}} != "
+    description: 移除 apt 仓库
+    command: "pkexec add-apt-repository -y --remove '{{repo}}' && pkexec apt update"
+    safety: grey
+    confirm: "移除 apt 仓库「{{repo}}」并刷新索引"
+    timeout: 300
+    on_failure: stop
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' 'apt 仓库操作完成'"

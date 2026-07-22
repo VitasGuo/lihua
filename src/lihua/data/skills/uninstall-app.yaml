@@ -1,0 +1,110 @@
+name: uninstall_app
+description: 卸载应用程序
+version: 0.1
+category: mvp
+author: lihua
+triggers:
+  - 卸载
+  - 卸载软件
+  - 卸载应用
+  - 卸载一下
+  - 卸载个
+  - 卸载一个
+  - 删除软件
+  - 删软件
+  - 删掉软件
+  - 移除软件
+  - 移除应用
+  - 卸了
+  - uninstall
+  - 删除
+  - 删掉
+  - 移除
+examples:
+  - 卸载 Firefox
+  - 卸载 QQ
+  - 删掉 vscode
+parameters:
+  - name: target
+    required: true
+    description: 应用名称
+    extract: "(?:卸载|卸了|卸载掉|卸载一下|卸载个|卸载一个|删除|删掉|移除|卸掉)\\s*(?:个|一个|掉|一下)?\\s*(?:应用|软件|app|application|程序)?\\s*(.+)"
+aliases:
+  QQ: ["com.tencent.qq", "linuxqq"]
+  qq: ["com.tencent.qq", "linuxqq"]
+  微信: ["com.tencent.weixin", "wechat"]
+  wechat: ["com.tencent.weixin", "wechat"]
+  vscode: ["com.visualstudio.code", "code"]
+  visual studio code: ["com.visualstudio.code", "code"]
+  火狐: ["org.mozilla.firefox", "firefox"]
+  火狐浏览器: ["org.mozilla.firefox", "firefox"]
+  firefox: ["org.mozilla.firefox", "firefox"]
+  chrome: ["com.google.chrome", "google-chrome"]
+  谷歌浏览器: ["com.google.chrome", "google-chrome"]
+  edge: ["com.microsoft.edge", "microsoft-edge-stable"]
+  spotify: ["com.spotify.music", "spotify"]
+  网易云音乐: ["com.netease.cloudmusic", "netease-cloud-music"]
+  网易云: ["com.netease.cloudmusic", "netease-cloud-music"]
+  wps: ["com.wps.office", "wps-office"]
+  wps office: ["com.wps.office", "wps-office"]
+  telegram: ["org.telegram.desktop", "telegram-desktop"]
+  电报: ["org.telegram.desktop", "telegram-desktop"]
+  discord: ["com.discordapp.discord", "discord"]
+  vlc: ["org.videolan.vlc", "vlc"]
+  obs: ["com.obsproject.studio", "obs-studio"]
+  gimp: ["org.gimp.gimp", "gimp"]
+  blender: ["org.blender.blender", "blender"]
+  钉钉: ["com.alibabainc.dingtalk"]
+  dingtalk: ["com.alibabainc.dingtalk"]
+  飞书: ["com.bytedance.feishu", "feishu"]
+  feishu: ["com.bytedance.feishu", "feishu"]
+  typora: ["typora"]
+  obsidian: ["md.obsidian.obsidian"]
+  steam: ["com.valvesoftware.steam", "steam"]
+steps:
+  - name: resolve
+    type: resolve_package
+    description: 解析已安装的包名
+    prefer: [flatpak, apt, snap]
+  - name: check_flatpak
+    type: command
+    description: 检查是否作为 flatpak 安装
+    condition: "{{package_type}} == flatpak"
+    command: "flatpak list --columns=application | grep -i '^{{package}}$'"
+    safety: white
+    on_failure: continue
+    timeout: 5
+  - name: uninstall_flatpak
+    type: command
+    condition: "{{package_type}} == flatpak"
+    command: "flatpak uninstall -y --delete-data {{package}}"
+    safety: grey
+    confirm: "卸载 {{target}}（Flatpak 应用，同时删除数据）"
+    timeout: 120
+    on_failure: continue
+  - name: uninstall_apt
+    type: command
+    condition: "{{package_type}} == apt"
+    command: "pkexec apt purge -y {{package}}"
+    safety: grey
+    confirm: "卸载 {{target}}（apt 包，同时删除配置）"
+    timeout: 120
+    on_failure: continue
+  - name: uninstall_snap
+    type: command
+    condition: "{{package_type}} == snap"
+    command: "pkexec snap remove --purge {{package}}"
+    safety: grey
+    confirm: "卸载 {{target}}（Snap 应用，同时删除数据）"
+    timeout: 120
+    on_failure: continue
+  - name: verify
+    type: verify
+    description: 验证卸载结果（检查 snap/flatpak/apt/dpkg 四种安装方式）
+    # v0.7.15: 用 target 检查（不是 package），因为 resolve_package 可能解析为 flatpak ID 但实际是 snap 版
+    # on_failure=stop：失败就停止，不执行 notify，run_skill 返回 success=False
+    command: "! snap list 2>/dev/null | grep -i '{{target}}' && ! flatpak list 2>/dev/null | grep -i '{{target}}' && ! dpkg -l 2>/dev/null | grep -i '{{target}}' && ! which '{{target}}' 2>/dev/null"
+    on_failure: stop
+  - name: notify
+    type: notify
+    command: "notify-send '狸花猫' '{{target}} 已卸载'"
