@@ -127,8 +127,7 @@ body {
 .window-outer {
   border-radius: 16px;
   overflow: hidden;
-  /* GPU 加速：将整个窗口提升为合成层 */
-  will-change: transform;
+  /* v0.8.28: translateZ(0) 提升窗口为合成层（不加 will-change 避免预分配内存） */
   transform: translateZ(0);
   contain: layout paint;
 }
@@ -138,12 +137,14 @@ body {
  *   - vignette 用 box-shadow inset 模拟（跟随 border-radius 裁剪）
  *   - 顶部 1px 高光线（强化"屏幕"质感）
  *   - 整体 1px 内边框（强化圆角轮廓）
- *   - GPU 加速：backdrop-filter 自动走 GPU，但加 will-change 确保
+ *   - v0.8.27: blur(40px) saturate(180%) → blur(20px)，降低 Linux WebKitGTK 下 GPU 合成负载
+ *   - v0.8.28: 恢复 translateZ(0) 提升窗口为合成层（v0.8.27 移除后窗口渲染退化为 CPU）
+ *     不加 will-change（避免预分配内存），translateZ(0) 足够提升合成层
  */
 .window-glass {
   background: var(--bg-window);
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-radius: 16px;
   box-shadow:
     var(--shadow-window),
@@ -151,24 +152,21 @@ body {
     inset 0 0 0 1px rgba(255, 255, 255, 0.06),   /* 整体 1px 内边框 */
     inset 0 0 32px rgba(0, 0, 0, 0.30),           /* 边缘 32px 深渐变（强化圆角） */
     inset 0 0 120px rgba(0, 0, 0, 0.12);          /* 边缘 120px 柔和渐变（vignette） */
-  will-change: transform, backdrop-filter;
   transform: translateZ(0);
 }
 
+/* v0.8.27: 消息卡片去掉 backdrop-filter，改纯色背景
+ *   原因：每条助手消息都有 blur(16px)，滚动时每卡片重新计算模糊 → 卡顿
+ *   纯色 rgba 视觉效果几乎一致，但 GPU 开销降低 ~90%
+ */
 .card-glass {
-  background: rgba(60, 60, 67, 0.48);
-  backdrop-filter: blur(16px) saturate(150%);
-  -webkit-backdrop-filter: blur(16px) saturate(150%);
-  will-change: transform;
-  transform: translateZ(0);
+  background: rgba(60, 60, 67, 0.72);
 }
 
 .input-glass {
   background: var(--bg-input);
-  backdrop-filter: blur(20px) saturate(150%);
-  -webkit-backdrop-filter: blur(20px) saturate(150%);
-  will-change: transform;
-  transform: translateZ(0);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 /* ============================================================

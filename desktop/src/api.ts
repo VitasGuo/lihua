@@ -117,6 +117,7 @@ export type AgentStreamEvent =
   | { type: 'tool_call_start'; name: string; arguments: Record<string, unknown> }
   | { type: 'tool_call_end'; name: string; success: boolean; message: string; details?: Record<string, unknown> | null; error?: string }
   | { type: 'needs_confirm'; id: string; message: string; command: string; tool_name?: string; intent?: string; code?: string; command_text?: string }
+  | { type: 'confirm_timeout'; id: string }  // v0.8.29: confirm 超时后关闭 ConfirmSheet
   | { type: 'done'; text: string; success: boolean; tool_calls: ToolCallRecord[]; error?: string }
   | { type: 'error'; message: string }
 

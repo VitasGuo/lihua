@@ -29,7 +29,7 @@ const BACKEND_READY_TIMEOUT: Duration = Duration::from_secs(20);
 struct BackendHandle(Mutex<Option<Child>>);
 
 /// 应用版本（用于关于对话框）
-const APP_VERSION: &str = "0.8.26-alpha";
+const APP_VERSION: &str = "0.8.30-alpha";
 
 fn main_window(app: &AppHandle) -> Option<WebviewWindow> {
     app.get_webview_window("main")
@@ -348,6 +348,18 @@ fn app_version() -> String {
 }
 
 pub fn run() {
+    // v0.8.30: 修复 Wayland 下 fcitx5 候选框飘移 + 闪烁
+    //   根因：GTK_IM_MODULE=fcitx 强制 WebKitGTK（GTK3 应用）使用 fcitx5 的 X11 im module，
+    //   而不是 Wayland 原生 text-input-v3 协议。X11 im module 在 Wayland 下：
+    //   1. 无法正确获取光标屏幕坐标 → 候选框到处飘
+    //   2. 触发重复的 input-context 事件 → 按一个字母候选框闪两次
+    //   修复：Wayland 会话下清除 GTK_IM_MODULE，让 WebKitGTK 使用 Wayland text-input-v3
+    //   参考：https://fcitx-im.org/wiki/Using_Fcitx_5_on_Wayland
+    //   注意：只在 Wayland 下清除，X11 会话保留（X11 需要 GTK_IM_MODULE=fcitx）
+    if std::env::var("XDG_SESSION_TYPE").as_deref() == Ok("wayland") {
+        std::env::remove_var("GTK_IM_MODULE");
+    }
+
     // v0.7.5: WebKitGTK GPU 加速
     //   WEBKIT_DISABLE_COMPOSITING_MODE=0 → 启用 GPU 合成层（默认可能禁用）
     //   WEBKIT_DISABLE_DMABUF_RENDERER=0  → 启用 dmabuf 渲染器（更高效的 GPU 路径）

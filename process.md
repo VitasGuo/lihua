@@ -4,10 +4,78 @@
 
 让普通用户也能省心用 Linux：自然语言 → 任务 → 自动执行 → 反馈，不用命令行。
 
-**当前版本**：v0.8.26-alpha（pyproject `0.8.26`，ModelSheet 事件处理 DOM 级重构——不依赖 React 合成事件冒泡）
-**阶段**：v0.7.0 UI 重构 + v0.7.1 增强 + v0.7.2 修复 + v0.7.3 极简模型设置 + v0.7.4 真机实测修复 + v0.7.5 细节精修 + GPU 加速 + 底层优化 + v0.7.6 下拉菜单 Portal 修复 + v0.7.7 日志系统 + v0.7.8 LogSheet 日志查看 UI + v0.7.9 流式输出 + Agent 多轮对话 + v0.7.10 AuditSheet 独立审计日志 + v0.7.11 beautify_ubuntu 能力扩展 + v0.7.12 Skill 库三层整合 + v0.7.13 交互式 confirm + sudo→pkexec + v0.7.14 Agent 行为优化 + v0.7.15 修复谎报成功 + 版本不匹配检测 + v0.8.0 run_shell 万能兜底工具 + v0.8.1 run_shell 安全增强 + v0.8.2 文件操作工具组 + v0.8.3 run_python 万能工具 + v0.8.4 confirm 弹窗富文本展示 + v0.8.5 新用户引导 + v0.8.6 confirm 超时修复 + v0.8.7 LLM 自我诊断能力增强 + v0.8.8 confirm 流程致命 bug 修复 + v0.8.9 自进化能力（self_restart / self_build / self_status）+ v0.8.10 自进化完善（self_version_bump + 前端 SSE 恢复）+ v0.8.11 二次进化第一支柱（记忆系统）+ v0.8.12 二次进化第二支柱（技能自生成）+ v0.8.13 二次进化第三支柱（模块化 Prompt 系统）+ v0.8.14 二次进化第四支柱（插件架构）+ v0.8.15 二次进化第五支柱（自监控分析）+ v0.8.16 记忆分层 + Skill 使用记录（参考 OpenClaw）+ v0.8.17 Skill 规则提升 + 月度归档（参考 OpenClaw）+ v0.8.18 踩坑记录机制（参考 trae 工作流）+ v0.8.19 UI 改进（窗口控制按钮 + 最大化铺满 + 底栏防误触）+ v0.8.20 记忆管理入口 + 思考链记录 + 上下文持久化 + 历史对话调取 + v0.8.21 ModelSheet 4 个 bug 修复 + v0.8.22 CLI 命令补全 + v0.8.23 Agent 聚焦本职 + v0.8.24 gui 启动自检+自动编译 + v0.8.25 ModelSheet 选模型退出 bug 修复 + 模型清单全面更新 + v0.8.26 ModelSheet 事件处理 DOM 级重构
+**当前版本**：v0.8.30-alpha（pyproject `0.8.30`，Wayland fcitx5 修复 + Linux 桌面诊断知识注入 + fix_ime skill）
+**阶段**：v0.7.0 UI 重构 + v0.7.1 增强 + v0.7.2 修复 + v0.7.3 极简模型设置 + v0.7.4 真机实测修复 + v0.7.5 细节精修 + GPU 加速 + 底层优化 + v0.7.6 下拉菜单 Portal 修复 + v0.7.7 日志系统 + v0.7.8 LogSheet 日志查看 UI + v0.7.9 流式输出 + Agent 多轮对话 + v0.7.10 AuditSheet 独立审计日志 + v0.7.11 beautify_ubuntu 能力扩展 + v0.7.12 Skill 库三层整合 + v0.7.13 交互式 confirm + sudo→pkexec + v0.7.14 Agent 行为优化 + v0.7.15 修复谎报成功 + 版本不匹配检测 + v0.8.0 run_shell 万能兜底工具 + v0.8.1 run_shell 安全增强 + v0.8.2 文件操作工具组 + v0.8.3 run_python 万能工具 + v0.8.4 confirm 弹窗富文本展示 + v0.8.5 新用户引导 + v0.8.6 confirm 超时修复 + v0.8.7 LLM 自我诊断能力增强 + v0.8.8 confirm 流程致命 bug 修复 + v0.8.9 自进化能力（self_restart / self_build / self_status）+ v0.8.10 自进化完善（self_version_bump + 前端 SSE 恢复）+ v0.8.11 二次进化第一支柱（记忆系统）+ v0.8.12 二次进化第二支柱（技能自生成）+ v0.8.13 二次进化第三支柱（模块化 Prompt 系统）+ v0.8.14 二次进化第四支柱（插件架构）+ v0.8.15 二次进化第五支柱（自监控分析）+ v0.8.16 记忆分层 + Skill 使用记录（参考 OpenClaw）+ v0.8.17 Skill 规则提升 + 月度归档（参考 OpenClaw）+ v0.8.18 踩坑记录机制（参考 trae 工作流）+ v0.8.19 UI 改进（窗口控制按钮 + 最大化铺满 + 底栏防误触）+ v0.8.20 记忆管理入口 + 思考链记录 + 上下文持久化 + 历史对话调取 + v0.8.21 ModelSheet 4 个 bug 修复 + v0.8.22 CLI 命令补全 + v0.8.23 Agent 聚焦本职 + v0.8.24 gui 启动自检+自动编译 + v0.8.25 ModelSheet 选模型退出 bug 修复 + 模型清单全面更新 + v0.8.26 ModelSheet 事件处理 DOM 级重构 + v0.8.27 滚动性能优化 + v0.8.28 滚动合成层提升 + v0.8.29 ConfirmSheet 布局修复 + confirm 超时自动关闭 + v0.8.30 Wayland fcitx5 候选框飘移+闪烁修复 + Linux 桌面诊断知识注入 + fix_ime skill
 
 ## 版本历史
+
+### v0.8.30-alpha (2026-07-23) — Wayland fcitx5 修复 + 桌面诊断知识注入 + fix_ime skill（T086）
+
+**问题背景**：用户反馈"输入法候选框有时候到处飘"+"按一个字母候选框闪两次"。用户说"lihua 一直修复不了，找到的原因好像也不对"。随后提出更深层需求："lihua 能具备你这种解决这一类问题的能力吗？"
+
+**三层改造**：
+
+1. **直接修复**（T086，`lib.rs` L350-361）：Wayland 会话下清除 `GTK_IM_MODULE`，让 WebKitGTK 使用 Wayland text-input-v3 协议
+   - 根因：`GTK_IM_MODULE=fcitx` 强制 GTK3/4 用 X11 im module，Wayland 下坐标转换不正确→候选框飘移+闪烁
+   - 参考：https://fcitx-im.org/wiki/Using_Fcitx_5_on_Wayland
+
+2. **知识注入**（`prompt_builder.py` L320-386 + L409-415）：
+   - 新增 `linux_troubleshooting` PromptSection（priority=15，在 principles 之后、tool_strategy 之前）
+   - 包含诊断方法论（收集环境→对照已知问题→定位根因→最小化修复）
+   - 包含已知问题知识库：输入法（Wayland GTK_IM_MODULE）、WebKitGTK（滚动卡顿、GPU 黑屏）、Wayland vs X11 差异速查表
+   - 让 lihua 面对桌面环境问题时能系统化诊断，不盲目猜测
+
+3. **fix_ime skill**（`src/lihua/data/skills/fix-ime.yaml`，85th skill）：
+   - 8 个步骤：环境收集→诊断→修复 fcitx5/ibus→Kimpanel 后备→fcitx5-diagnose→通知
+   - 23 个触发词（候选框飘/闪/不跟随等）
+   - 自动检测 Wayland + GTK_IM_MODULE 并修复
+
+**验证**：
+- prompt_builder 验证通过（linux_troubleshooting section 在 tool_strategy 之前，prompt 总长 8089 字符）
+- SkillRegistry 成功加载 fix_ime（84→85 skills）
+- 全量测试 879 passed 无回归
+- v0.8.30 启动正常，health API 确认 skills_count=85
+
+### v0.8.29-alpha (2026-07-22) — ConfirmSheet 布局修复 + confirm 超时自动关闭（T085）
+
+**问题背景**：用户反馈"确认执行的框特别长，看不到按钮没办法点"和"confirm 在 600s 等待后才出来"。根因链：ConfirmSheet 无 max-height → 按钮被推出可视区域 → 用户无法确认 → 600s 超时 → agent 继续运行 → 再次需要 confirm → 弹新框。且超时后前端 ConfirmSheet 不自动关闭（"幽灵弹窗"）。
+
+**核心改造**（T085，3 处改动）：
+
+1. **ConfirmSheet 布局修复**（`ConfirmSheet.tsx`）：sheet 容器加 `maxHeight: calc(100vh - 8rem)` + `flex flex-col`，内容区加 `overflow-y-auto flex-1`，顶部栏和按钮区加 `shrink-0`——按钮始终固定底部可见
+2. **后端 confirm 超时推送事件**（`server.py` L170）：超时后推 `confirm_timeout` 事件到 SSE 流
+3. **前端处理 confirm_timeout**（`App.tsx` L383-388 + `api.ts` L120）：收到事件后 `setConfirmPending(null)` 自动关闭旧 ConfirmSheet
+
+**验证**：TypeScript 编译通过，v0.8.29 构建成功，`lihua gui` 启动正常
+
+### v0.8.28-alpha (2026-07-22) — 滚动合成层提升（T084 续）
+
+**问题背景**：v0.8.27 的 blur 降级不够，滚动仍卡。根因是滚动容器没有合成层提升——WebKitGTK 下 `overflow-y: auto` 每帧走 CPU 重绘。
+
+**核心改造**：
+1. 滚动容器加 `translateZ(0)` + `will-change: scroll-position`（`MessageList.tsx`）
+2. 恢复 `.window-glass` + `.window-outer` 的 `translateZ(0)`（v0.8.27 错误移除导致窗口渲染退化为 CPU）
+3. MessageBubble 加 `React.memo`（避免滚动时不必要重渲染）
+
+### v0.8.27-alpha (2026-07-22) — 滚动性能优化（T084）
+
+**问题背景**：用户反馈"对话的时候滚轮上下滑动，界面好卡。尤其是界面全屏最大化的时候"。根因是多层 backdrop-filter blur 在 Linux WebKitGTK 下性能极差（可能软件渲染），全屏时面积翻倍导致卡顿加剧。
+
+**核心改造**（T084，`index.css` + `MessageBubble.tsx` + `MessageList.tsx`）：
+
+1. **窗口 blur 降级**：`.window-glass` 的 `blur(40px) saturate(180%)` → `blur(20px)`
+2. **消息卡片去 backdrop-filter**：`.card-glass` 从 `blur(16px) saturate(150%)` → 纯色 `rgba(60, 60, 67, 0.72)`，GPU 开销降低 ~90%
+3. **输入框 blur 降级**：`.input-glass` 的 `blur(20px) saturate(150%)` → `blur(12px)`
+4. **清理 will-change 滥用**：移除 `.window-outer`、`.window-glass`、`.card-glass`、`.input-glass` 的 will-change + translateZ（常驻合成层浪费 GPU 内存）
+5. **消息 content-visibility: auto**（`MessageBubble.tsx`）：屏幕外消息跳过渲染，搭配 `contain-intrinsic-size: 120px` 避免滚动条跳动。流式消息不加
+6. **scrollIntoView smooth → auto**（`MessageList.tsx`）：避免平滑滚动与手动滚动冲突
+
+**验证**：
+- TypeScript 编译通过，CSS 从 27.82KB → 27.47KB（减少 will-change/backdrop-filter 代码）
+- v0.8.27 构建成功，`lihua gui` 启动正常，health API 确认 v0.8.27
+- 待用户真机验证：滚动流畅度改善，全屏时不再卡顿
+
+**版本号升级**：5 处 v0.8.26 → v0.8.27
 
 ### v0.8.26-alpha (2026-07-22) — ModelSheet 事件处理 DOM 级重构（T083）
 

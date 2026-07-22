@@ -69,11 +69,14 @@ export function ConfirmSheet({
       onClick={onCancel}
     >
       <div
-        className="animate-slide-down w-full max-w-lg bg-bg-secondary border border-border-default rounded-xl shadow-popover overflow-hidden"
+        className="animate-slide-down w-full max-w-lg bg-bg-secondary border border-border-default rounded-xl shadow-popover overflow-hidden flex flex-col"
+        // v0.8.29: 限制最大高度，确保按钮始终可见
+        //   旧代码无 max-height，内容太长时按钮被推出可视区域
+        style={{ maxHeight: 'calc(100vh - 8rem)' }}
         onClick={e => e.stopPropagation()}
       >
         {/* 顶部栏 */}
-        <div className="flex items-center gap-2.5 px-5 py-4 border-b border-border-soft">
+        <div className="flex items-center gap-2.5 px-5 py-4 border-b border-border-soft shrink-0">
           <div className="w-8 h-8 rounded-lg bg-accent-soft flex items-center justify-center">
             <ShieldCheck size={18} className="text-accent" strokeWidth={2} />
           </div>
@@ -85,8 +88,8 @@ export function ConfirmSheet({
           </IconButton>
         </div>
 
-        {/* 内容 */}
-        <div className="px-5 py-4 space-y-2.5">
+        {/* 内容区：可滚动，按钮始终可见 */}
+        <div className="px-5 py-4 space-y-2.5 overflow-y-auto flex-1">
           {useStructured ? (
             <>
               {/* v0.8.4: 结构化展示——意图 + 代码块/命令块 */}
@@ -169,8 +172,8 @@ export function ConfirmSheet({
           </p>
         </div>
 
-        {/* 按钮区 */}
-        <div className="px-5 py-4 border-t border-border-soft flex gap-2.5 justify-end">
+        {/* 按钮区：固定底部，始终可见 */}
+        <div className="px-5 py-4 border-t border-border-soft flex gap-2.5 justify-end shrink-0">
           <button
             onClick={onCancel}
             autoFocus

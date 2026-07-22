@@ -27,6 +27,7 @@
  *   - 两条消息 padding 统一，视觉对齐
  */
 
+import { memo } from 'react'
 import { AlertCircle, Brain, Loader2 } from 'lucide-react'
 import type { Message } from '../types'
 import { ToolCallCard } from './ToolCallCard'
@@ -35,11 +36,19 @@ interface MessageBubbleProps {
   msg: Message
 }
 
-export function MessageBubble({ msg }: MessageBubbleProps) {
+// v0.8.28: React.memo 避免滚动时 App state 变化导致所有消息重渲染
+export const MessageBubble = memo(function MessageBubble({ msg }: MessageBubbleProps) {
+  // v0.8.27: content-visibility: auto 让浏览器跳过屏幕外消息的渲染
+  //   搭配 contain-intrinsic-size 提供预估高度，避免滚动条跳动
+  //   流式消息（streaming）不加，避免内容更新时被跳过
+  const lazyStyle = msg.streaming
+    ? undefined
+    : { contentVisibility: 'auto' as const, containIntrinsicSize: '120px' }
+
   // === 用户消息 ===
   if (msg.role === 'user') {
     return (
-      <div className="flex justify-end message-in">
+      <div className="flex justify-end message-in" style={lazyStyle}>
       <div
           className={[
             'max-w-[75%]',
@@ -69,7 +78,7 @@ export function MessageBubble({ msg }: MessageBubbleProps) {
   const isThinking = msg.loading && !hasContent && !hasToolCalls && !msg.currentTool
 
   return (
-    <div className="flex justify-start message-in">
+    <div className="flex justify-start message-in" style={lazyStyle}>
       <div
         className={[
           'max-w-[92%]',
@@ -144,4 +153,4 @@ export function MessageBubble({ msg }: MessageBubbleProps) {
       </div>
     </div>
   )
-}
+})

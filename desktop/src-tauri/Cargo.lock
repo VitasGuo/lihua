@@ -1990,7 +1990,7 @@ dependencies = [
 
 [[package]]
 name = "lihua-desktop"
-version = "0.8.26"
+version = "0.8.30"
 dependencies = [
  "anyhow",
  "log",

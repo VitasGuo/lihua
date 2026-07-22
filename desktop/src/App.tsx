@@ -380,6 +380,13 @@ function App() {
               break
             }
 
+            case 'confirm_timeout': {
+              // v0.8.29: confirm 超时后后端推送此事件，关闭旧 ConfirmSheet
+              //   避免 ConfirmSheet 一直显示已失效的确认请求
+              setConfirmPending(null)
+              break
+            }
+
             case 'done':
               updateLast(m => ({
                 ...m,

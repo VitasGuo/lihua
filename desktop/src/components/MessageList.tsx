@@ -38,16 +38,21 @@ export function MessageList({ messages }: MessageListProps) {
   }, [])
 
   // 新消息到达时自动滚动到底部
+  // v0.8.27: 'smooth' → 'auto'，避免平滑滚动与手动滚动冲突导致卡顿
   useEffect(() => {
     if (isAutoScrollRef.current) {
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+      bottomRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' })
     }
   }, [messages])
 
   return (
     <div
       ref={containerRef}
-      className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-6"
+      className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-6 overscroll-contain"
+      // v0.8.28: 强制滚动容器提升为合成层
+      //   WebKitGTK 下 overflow-y:auto 默认不走 GPU，每帧 CPU 重绘 → 卡顿
+      //   translateZ(0) + will-change:scroll-position 让滚动走 GPU 合成
+      style={{ transform: 'translateZ(0)', willChange: 'scroll-position' }}
     >
       <div className="max-w-[640px] mx-auto space-y-6">
         {messages.map(m => (

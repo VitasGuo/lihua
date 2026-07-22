@@ -164,9 +164,10 @@ def _make_interactive_confirm_cb(
             with _pending_lock:
                 _pending_confirms.pop(confirm_id, None)
             return "confirmed" if session.response_result[0] else "denied"
-        # 超时
+        # 超时——推 confirm_timeout 事件让前端关闭 ConfirmSheet
         with _pending_lock:
             _pending_confirms.pop(confirm_id, None)
+        event_queue.put({"type": "confirm_timeout", "id": confirm_id})
         _log.warning(f"confirm 超时（{_CONFIRM_TIMEOUT}s）：confirm_id={confirm_id[:8]}...")
         return "timeout"
 

@@ -1,6 +1,6 @@
 [package]
 name = "lihua-desktop"
-version = "0.8.26"
+version = "0.8.30"
 description = "Lihua 狸花猫 - AI 系统管家桌面端"
 authors = ["lihua"]
 license = "MIT"

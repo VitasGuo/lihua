@@ -440,7 +440,7 @@ lihua/
 ├── ARCHITECTURE.md            # 架构文档
 ├── SESSION_CONTEXT.md         # 会话交接文档
 ├── process.md                 # 进度
-├── traps.md                   # 踩坑记录（T001-T083）
+├── traps.md                   # 踩坑记录（T001-T085）
 ├── pyproject.toml             # 构建配置 + 依赖 + scripts 入口
 ├── systemd/
 │   └── lihua.service          # systemd user service 模板
@@ -655,7 +655,7 @@ LLM 返回 `reasoning_content` 字段 → `router.py` 解析到 `LLMResponse.rea
 
 产品需求详见 [PRD.md](./PRD.md)。
 
-踩坑记录详见 [traps.md](./traps.md)（T001-T083）。
+踩坑记录详见 [traps.md](./traps.md)（T001-T086）。
 
 ## 贡献
 

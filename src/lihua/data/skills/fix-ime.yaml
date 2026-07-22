@@ -1,0 +1,176 @@
+name: fix_ime
+description: "诊断和修复输入法问题（候选框飘移、闪烁、不跟随光标、无法输入中文等），特别针对 Wayland 下的 fcitx5/ibus 兼容性问题。v0.8.30 新增"
+version: 0.1
+category: desktop
+author: lihua
+triggers:
+  - 输入法候选框
+  - 候选框飘
+  - 候选框闪
+  - 候选框乱跳
+  - 候选框不对
+  - 候选框看不到
+  - 候选框位置
+  - 输入法闪烁
+  - 输入法不跟随
+  - 输入法飘
+  - fcitx5候选框
+  - fcitx候选框
+  - 输入法候选词
+  - 候选词飘
+  - 候选词闪
+  - 输入法有问题
+  - 输入法不工作
+  - 打不出中文
+  - 输入法坏了
+  - IME candidate
+  - fix ime
+  - 修输入法
+  - 修复输入法
+examples:
+  - 输入法候选框到处飘
+  - 候选框闪两次
+  - fcitx5候选框不跟随光标
+  - 打字时候选框乱跳
+  - 输入法候选框位置不对
+parameters: []
+steps:
+  # ─── 阶段 1：环境信息收集 ───
+  - name: collect_env
+    type: command
+    description: |
+      收集输入法相关环境信息（会话类型、环境变量、版本）。
+      根据输出判断后续诊断方向。
+    command: |
+      echo "=== 会话类型 ===" && echo "XDG_SESSION_TYPE=$XDG_SESSION_TYPE" &&
+      echo "XDG_CURRENT_DESKTOP=$XDG_CURRENT_DESKTOP" &&
+      echo "GDK_BACKEND=$GDK_BACKEND" &&
+      echo "=== 输入法环境变量 ===" &&
+      env | grep -iE 'IM_MODULE|XMODIFIERS|INPUT_METHOD' 2>/dev/null || echo "(无 IM 相关变量)" &&
+      echo "=== fcitx5 ===" &&
+      (fcitx5 --version 2>/dev/null || echo "fcitx5 未安装") &&
+      (pgrep -af fcitx5 2>/dev/null | head -3 || echo "fcitx5 未运行") &&
+      echo "=== ibus ===" &&
+      (ibus version 2>/dev/null || echo "ibus 未安装") &&
+      (pgrep -af ibus-daemon 2>/dev/null | head -3 || echo "ibus 未运行") &&
+      echo "=== 桌面环境 ===" &&
+      (gnome-shell --version 2>/dev/null || echo "非 GNOME") &&
+      echo "=== GTK settings ===" &&
+      (cat ~/.config/gtk-3.0/settings.ini 2>/dev/null || echo "无 gtk-3.0/settings.ini") &&
+      echo "=== profile 中的 IM 变量 ===" &&
+      (grep -n 'IM_MODULE\|XMODIFIERS' ~/.profile ~/.bashrc ~/.pam_environment 2>/dev/null || echo "profile 中无 IM 变量")
+    safety: white
+    on_failure: continue
+
+  # ─── 阶段 2：诊断 Wayland + GTK_IM_MODULE 问题 ───
+  - name: diagnose_wayland_im
+    type: set_var
+    description: |
+      根据 collect_env 的输出诊断。
+      如果 XDG_SESSION_TYPE=wayland 且 GTK_IM_MODULE=fcitx/ibus → 找到根因：
+      Wayland 下 GTK_IM_MODULE 强制 GTK3/4 使用 X11 im module，导致候选框飘移和闪烁。
+      修复方案：清除 GTK_IM_MODULE，让 GTK 用 Wayland text-input-v3 协议。
+    vars:
+      session_type: "从 collect_env 输出读取 XDG_SESSION_TYPE 的值"
+      gtk_im_module: "从 collect_env 输出读取 GTK_IM_MODULE 的值"
+      im_framework: "从 collect_env 输出判断是 fcitx5 还是 ibus"
+
+  # ─── 阶段 3a：修复 Wayland + fcitx5 ───
+  - name: fix_wayland_fcitx5
+    type: command
+    description: |
+      修复 Wayland 下 fcitx5 候选框飘移/闪烁。
+      原理：清除 GTK_IM_MODULE，让 GTK3/4 使用 Wayland text-input-v3 协议。
+      同时在 gtk-3.0/settings.ini 设置 gtk-im-module=fcitx，确保 X11 应用仍能用 fcitx5。
+      参考：https://fcitx-im.org/wiki/Using_Fcitx_5_on_Wayland
+    condition: "{{session_type}} == wayland && {{im_framework}} == fcitx5"
+    command: |
+      # 1. 从 ~/.profile 和 ~/.bashrc 中移除 GTK_IM_MODULE=fcitx（Wayland 不需要）
+      sed -i '/export\s*GTK_IM_MODULE=fcitx/d' ~/.profile ~/.bashrc 2>/dev/null
+      # 2. 在 ~/.config/gtk-3.0/settings.ini 中设置 gtk-im-module=fcitx（仅 X11 应用用）
+      mkdir -p ~/.config/gtk-3.0
+      if [ ! -f ~/.config/gtk-3.0/settings.ini ]; then
+        echo -e "[Settings]\ngtk-im-module=fcitx" > ~/.config/gtk-3.0/settings.ini
+      elif ! grep -q 'gtk-im-module' ~/.config/gtk-3.0/settings.ini; then
+        echo "gtk-im-module=fcitx" >> ~/.config/gtk-3.0/settings.ini
+      fi
+      # 3. 同步 gtk-4.0
+      mkdir -p ~/.config/gtk-4.0
+      if [ ! -f ~/.config/gtk-4.0/settings.ini ]; then
+        echo -e "[Settings]\ngtk-im-module=fcitx" > ~/.config/gtk-4.0/settings.ini
+      elif ! grep -q 'gtk-im-module' ~/.config/gtk-4.0/settings.ini; then
+        echo "gtk-im-module=fcitx" >> ~/.config/gtk-4.0/settings.ini
+      fi
+      echo "✓ 已修复："
+      echo "  - 移除了 ~/.profile / ~/.bashrc 中的 GTK_IM_MODULE=fcitx"
+      echo "  - 设置了 gtk-3.0/gtk-4.0 settings.ini 的 gtk-im-module=fcitx（X11 应用用）"
+      echo "  - Wayland 原生应用将使用 text-input-v3 协议（候选框由 GNOME Shell 渲染）"
+      echo "  - QT_IM_MODULE 和 XMODIFIERS 保持不变（Qt/X11 应用仍需要）"
+    safety: grey
+    confirm: "修复 Wayland 下 fcitx5 候选框飘移/闪烁：\n\n1. 从 ~/.profile / ~/.bashrc 移除 GTK_IM_MODULE=fcitx\n2. 在 gtk-3.0/gtk-4.0 settings.ini 设置 gtk-im-module=fcitx（X11 应用用）\n\n原理：Wayland 下 GTK_IM_MODULE=fcitx 会强制 GTK 用 X11 im module，导致候选框位置错误。清除后 GTK 用 Wayland text-input-v3 协议，候选框由 GNOME Shell 正确渲染。\n\n需要注销重新登录后生效。"
+    on_failure: continue
+
+  # ─── 阶段 3b：修复 Wayland + ibus ───
+  - name: fix_wayland_ibus
+    type: command
+    description: 修复 Wayland 下 ibus 候选框飘移/闪烁（原理同 fcitx5）
+    condition: "{{session_type}} == wayland && {{im_framework}} == ibus"
+    command: |
+      sed -i '/export\s*GTK_IM_MODULE=ibus/d' ~/.profile ~/.bashrc 2>/dev/null
+      mkdir -p ~/.config/gtk-3.0 ~/.config/gtk-4.0
+      for dir in gtk-3.0 gtk-4.0; do
+        if [ ! -f ~/.config/$dir/settings.ini ]; then
+          echo -e "[Settings]\ngtk-im-module=ibus" > ~/.config/$dir/settings.ini
+        elif ! grep -q 'gtk-im-module' ~/.config/$dir/settings.ini; then
+          echo "gtk-im-module=ibus" >> ~/.config/$dir/settings.ini
+        fi
+      done
+      echo "✓ 已修复：移除了 GTK_IM_MODULE=ibus，Wayland 应用将使用 text-input-v3"
+    safety: grey
+    confirm: "修复 Wayland 下 ibus 候选框飘移/闪烁：移除 GTK_IM_MODULE=ibus。需要注销重新登录后生效。"
+    on_failure: continue
+
+  # ─── 阶段 4：检查 Kimpanel 扩展（后备方案） ───
+  - name: check_kimpanel
+    type: command
+    description: |
+      检查 Kimpanel GNOME Shell 扩展是否已安装。
+      Kimpanel 让 GNOME Shell 自己渲染候选框，绕过 Wayland 窗口定位问题。
+      如果清除 GTK_IM_MODULE 后输入法仍不工作，安装 Kimpanel 作为后备方案。
+    condition: "{{session_type}} == wayland"
+    command: |
+      gnome-extensions list 2>/dev/null | grep -i kimpanel || echo "kimpanel 未安装"
+    safety: white
+    on_failure: continue
+
+  # ─── 阶段 5：安装 Kimpanel（可选，用户确认） ───
+  - name: install_kimpanel
+    type: command
+    description: |
+      安装 Kimpanel GNOME Shell 扩展（后备方案）。
+      让 GNOME Shell 自己渲染候选框，绕过 Wayland 窗口定位限制。
+      适用于清除 GTK_IM_MODULE 后输入法仍不工作的情况。
+    condition: "{{session_type}} == wayland"
+    command: |
+      pkexec apt install -y gnome-shell-extension-kimpanel 2>/dev/null || echo "apt 安装失败，可能需要从 GNOME Extensions 网站安装"
+      gnome-extensions enable kimpanel@kde.org 2>/dev/null || echo "启用失败，可能需要注销后手动启用"
+      echo "Kimpanel 已安装。注销重新登录后，在 GNOME 扩展管理器中启用 Kimpanel。"
+    safety: grey
+    confirm: "安装 Kimpanel GNOME Shell 扩展（后备方案）：让 GNOME Shell 自己渲染候选框，绕过 Wayland 窗口定位问题。需要管理员权限安装 + 注销重新登录。"
+    on_failure: continue
+
+  # ─── 阶段 6：运行 fcitx5 诊断工具 ───
+  - name: run_fcitx5_diagnose
+    type: command
+    description: |
+      运行 fcitx5-diagnose 官方诊断工具，输出详细的环境检查报告。
+      如果以上修复未解决问题，此输出可帮助进一步诊断。
+    condition: "{{im_framework}} == fcitx5"
+    command: "fcitx5-diagnose 2>/dev/null | head -150"
+    safety: white
+    on_failure: continue
+
+  # ─── 阶段 7：通知用户 ───
+  - name: notify_result
+    type: notify
+    command: "notify-send '狸花猫' '输入法诊断完成。\\n\\n如果是 Wayland 下候选框飘移/闪烁：\\n1. 已清除 GTK_IM_MODULE 环境变量\\n2. 已设置 gtk settings.ini（X11 应用用）\\n3. 请注销重新登录后测试\\n\\n如果仍不工作，已安装 Kimpanel 扩展作为后备方案。'"

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "lihua"
-version = "0.8.26"
+version = "0.8.30"
 description = "Lihua 狸花猫 - AI 系统管家，让普通用户也能省心用 Linux"
 readme = "README.md"
 requires-python = ">=3.11"

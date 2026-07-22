@@ -317,6 +317,74 @@ _FINAL_RULES_CONTENT = """# 重要规则
 _TOOL_CATALOG_CONTENT = """# 可用工具（run_shell + read_file + write_file + edit_file + run_python + read_log + self_restart + self_build + self_status + self_version_bump + memory_recall + create_skill + self_analyze + skill_evolve + memory_archive + trap_search + trap_update + {skill_count} 个预定义 Skill）
 {skill_catalog}"""
 
+# v0.8.30: Linux 桌面环境兼容性问题诊断知识库
+#   来源：实际踩坑经验（T086 Wayland fcitx5 候选框飘移 + T084 WebKitGTK 滚动卡顿等）
+#   目的：让 lihua 面对桌面环境问题时能系统化诊断，不盲目猜测
+_LINUX_TROUBLESHOOTING_CONTENT = """# Linux 桌面环境兼容性问题诊断（领域知识）
+
+## 诊断方法论
+遇到桌面环境问题（输入法异常、渲染卡顿、窗口行为异常、黑屏闪烁等）时，按以下顺序排查：
+
+1. **收集环境信息**（先只读，不修改）：
+   - `echo $XDG_SESSION_TYPE` — Wayland 还是 X11（决定后续排查方向）
+   - `echo $GDK_BACKEND` — GTK 应用走 Wayland 还是 XWayland
+   - `env | grep -i 'IM_MODULE\\|XMODIFIERS'` — 输入法环境变量
+   - `env | grep -i 'WEBKIT_\\|GTK_\\|QT_'` — Web/GUI 框架变量
+   - `gnome-shell --version` / `echo $XDG_CURRENT_DESKTOP` — 桌面环境版本
+   - `dpkg -l | grep -i webkit` — WebKitGTK 版本
+   - `fcitx5 --version` / `ibus version` — 输入法版本
+   - `lspci -k | grep -i vga -A2` — GPU 驱动类型
+
+2. **对照已知问题**（见下方知识库，匹配症状 → 根因 → 修复）
+
+3. **定位根因**：不要只看表面症状，要找到"为什么"——环境变量、协议差异、版本 bug、驱动兼容性
+
+4. **最小化修复**：只改必要的环境变量或配置，不要大范围重装或换软件
+
+## 已知问题知识库
+
+### 输入法：Wayland 下候选框飘移/闪烁
+- **症状**：候选框不跟随光标、到处飘、按一个字母闪两次
+- **根因**：`GTK_IM_MODULE=fcitx`（或 `ibus`）强制 GTK3/4 应用使用 X11 im module，在 Wayland 下坐标转换不正确
+- **修复**：Wayland 会话下清除 `GTK_IM_MODULE`，让 GTK 用 Wayland 原生 text-input-v3 协议
+  - 从 `~/.profile` / `~/.bashrc` 移除 `export GTK_IM_MODULE=fcitx`
+  - 在 `~/.config/gtk-3.0/settings.ini` 设 `gtk-im-module=fcitx`（仅 X11 应用用）
+  - `QT_IM_MODULE` 和 `XMODIFIERS` 不动（Qt 和 X11 应用仍需要）
+- **后备**：安装 `gnome-shell-extension-kimpanel`，让 GNOME Shell 渲染候选框
+- **参考**：https://fcitx-im.org/wiki/Using_Fcitx_5_on_Wayland
+
+### WebKitGTK：滚动卡顿/界面卡
+- **症状**：Tauri/WebKitGTK 应用滚动卡顿，全屏最大化时更严重
+- **根因**：`overflow-y: auto` 容器未提升为合成层 → 每帧 CPU 重绘；`backdrop-filter: blur()` 在 WebKitGTK 下可能走软件渲染
+- **修复**：
+  - 滚动容器加 `transform: translateZ(0)` + `will-change: scroll-position`
+  - 降低 `backdrop-filter` 的 blur 半径（40px → 20px 或更低）
+  - 长列表加 `content-visibility: auto` + `contain-intrinsic-size`
+  - `transparent: true` 窗口在 Linux 下有额外合成开销
+
+### WebKitGTK：GPU 加速/黑屏
+- **症状**：WebKitGTK 应用黑屏、渲染异常
+- **根因**：Wayland + NVIDIA 专有驱动下 dmabuf renderer 不兼容
+- **修复**：`WEBKIT_DISABLE_DMABUF_RENDERER=1` 禁用 dmabuf，或 `GDK_BACKEND=x11` 走 XWayland
+
+### Wayland vs X11 差异速查
+| 场景 | X11 | Wayland |
+|------|-----|---------|
+| 输入法 | 需要 `GTK_IM_MODULE=fcitx` | **不需要**，用 text-input-v3 协议 |
+| 窗口定位 | 应用自行获取屏幕坐标 | 由 compositor 管理，应用不能自由定位 |
+| 屏幕录制 | `xdotool` / `import` | 需要 PipeWire + xdg-desktop-portal |
+| 全局快捷键 | XGrabKey | compositor 专属 API |
+| 剪贴板 | `xclip` / `xsel` | `wl-copy` / `wl-paste` |
+
+## 环境变量检查清单
+遇到桌面环境问题时，用 `run_shell` 一次性检查：
+```bash
+echo "SESSION=$XDG_SESSION_TYPE" && echo "DESKTOP=$XDG_CURRENT_DESKTOP" && \\
+env | grep -iE 'IM_MODULE|XMODIFIERS|GDK_BACKEND|WEBKIT_|GTK_IM|QT_IM' && \\
+gnome-shell --version 2>/dev/null; fcitx5 --version 2>/dev/null; \\
+dpkg -l 2>/dev/null | grep -iE 'webkit|gtk-[0-9]'
+```"""
+
 
 def get_default_builder() -> PromptBuilder:
     """返回内置默认 builder，注册所有内置 section。
@@ -337,6 +405,13 @@ def get_default_builder() -> PromptBuilder:
         priority=10,
         tags=["core"],
         description="核心原则（5 条）",
+    ))
+    builder.register_section(PromptSection(
+        name="linux_troubleshooting",
+        content=_LINUX_TROUBLESHOOTING_CONTENT,
+        priority=15,
+        tags=["knowledge"],
+        description="Linux 桌面环境兼容性问题诊断知识库（Wayland/输入法/WebKitGTK）",
     ))
     builder.register_section(PromptSection(
         name="tool_strategy",
