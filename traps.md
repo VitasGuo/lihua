@@ -3259,3 +3259,72 @@ gnome-extensions enable kimpanel@kde.org
 文件：`desktop/src-tauri/src/lib.rs` L350-361（Wayland 下清除 GTK_IM_MODULE）
 
 ---
+
+### T087：GPU 合成层崩溃导致窗口黑屏
+
+**现象**：lihua 在 SSE 流式输出回答问题时，窗口突然完全黑屏，"好像有什么东西直接把对话框遮住了一样"。日志中有 `Error reading events from display: 连接被对方重置`。
+
+**根因**：v0.8.28 引入的 GPU 合成层优化过度，导致 GPU 内存耗尽→Wayland display 连接被合成器断开→窗口无法渲染→黑屏。
+
+具体机制（三个因素叠加）：
+
+1. **`will-change: scroll-position`**（`MessageList.tsx` L55）：
+   - 告诉浏览器"这个元素即将滚动"→浏览器预分配覆盖**整个可滚动区域**的合成层缓冲区
+   - 消息多时（如 50 条 × 100px = 5000px），缓冲区 = 5000px × 窗口宽度 × 4 bytes（RGBA）× HiDPI 缩放
+   - 在 WebKitGTK 下可能达到数百 MB，GPU 内存耗尽
+
+2. **多个 `translateZ(0)` 叠加**（v0.8.28 加的）：
+   - `.window-outer` — translateZ(0)（合成层 1）
+   - `.window-glass` — translateZ(0)（合成层 2）
+   - `MessageList` 滚动容器 — translateZ(0)（合成层 3）
+   - 每个合成层都消耗 GPU 内存，三个叠加压力过大
+
+3. **`transparent: true` + `backdrop-filter: blur()` + 半透明背景**：
+   - `transparent: true`（tauri.conf.json）让窗口依赖 GPU 合成器渲染
+   - `backdrop-filter: blur(20px)`（.window-glass）依赖 GPU 合成器模糊窗口后方内容
+   - `--bg-window: rgba(28, 28, 30, 0.82)` 是 82% 不透明——GPU 崩溃后 18% 透明部分在 Wayland 下显示为黑色
+   - GPU 合成器崩溃 → backdrop-filter 失效 + 透明窗口无内容 → 完全黑屏
+
+**触发条件**：SSE 流式输出时，每个 text 事件都触发 React 重渲染 → MessageList 频繁更新 → 合成层频繁重绘 → GPU 内存峰值 → 合成器崩溃
+
+**解决方案**（v0.8.31，4 处改动）：
+
+1. **移除 `will-change: scroll-position`**（`MessageList.tsx` L52-56）：
+   - 只保留 `translateZ(0)`——足够提升合成层，不预分配大缓冲区
+   - `translateZ(0)` 创建固定大小的合成层（窗口可见区域），不会随消息增多而增大
+
+2. **移除 .window-outer 和 .window-glass 的 `translateZ(0)`**（`index.css` L127-154）：
+   - 窗口本身不需要手动提升合成层，浏览器自动管理
+   - 只保留 MessageList 的合成层（滚动性能关键）
+
+3. **移除所有 `backdrop-filter`**（`index.css` L144-166）：
+   - .window-glass 的 `backdrop-filter: blur(20px)` → 移除
+   - .input-glass 的 `backdrop-filter: blur(12px)` → 移除
+   - 在不透明背景上 backdrop-filter 无视觉效果，只浪费 GPU
+
+4. **所有背景色改为不透明**（`index.css` L30-35, L159-165）：
+   - `--bg-window: rgba(28, 28, 30, 0.82)` → `rgb(28, 28, 30)`
+   - `--bg-input: rgba(58, 58, 60, 0.6)` → `rgb(58, 58, 60)`
+   - `.card-glass: rgba(60, 60, 67, 0.72)` → `rgb(60, 60, 67)`
+   - 即使 GPU 部分失败，不透明背景仍然可见，不会完全黑屏
+
+**视觉效果影响**：
+- 毛玻璃效果消失（Wayland 下本来就不完全生效，视觉差异极小）
+- 窗口背景从半透明变为不透明（在 Wayland 下几乎无感知，因为 Mutter 不完全支持透明窗口）
+- 消息卡片和输入框背景色几乎不变（只是从半透明变为不透明）
+
+**教训**：
+- `will-change` 属性是"双刃剑"——提升性能的同时预分配 GPU 内存，在内容量大时可能导致 GPU 内存耗尽
+- `translateZ(0)` 应该只用在最需要的元素上（如滚动容器），不要在窗口容器上滥用
+- `transparent: true` + `backdrop-filter` 在 Wayland 下是 GPU 合成器的"单点依赖"——GPU 崩溃时整个窗口变黑
+- 不透明背景色是防黑屏的"最后防线"——即使 GPU 部分失败，不透明背景仍然可见
+- Linux 桌面环境下，GPU 合成器的稳定性不如 macOS——不能依赖 GPU 合成器始终正常工作
+- 性能优化要"渐进式"——先做最小改动测试效果，不要一次加多个合成层 + will-change
+
+**全量审查发现的其他问题**（非黑屏相关，暂不修复）：
+- medium：App.tsx L475 的 setTimeout 没有 cleanup 机制——SSE 中断后 3 秒检测可能在新消息发送后触发状态覆盖
+- low：SSE 中断时 confirmPending 不被清除——已有 confirm_timeout 事件兜底
+
+文件：`desktop/src/components/MessageList.tsx` L52-56（移除 will-change）、`desktop/src/index.css` L30-35/L127-166（移除 backdrop-filter + translateZ + 不透明色）
+
+---

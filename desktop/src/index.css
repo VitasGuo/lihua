@@ -27,12 +27,12 @@
   --font-serif: 'Source Han Serif SC', '思源宋体', serif;
 
   /* === 背景层（从深到浅）=== */
-  --bg-window:    rgba(28, 28, 30, 0.82);   /* 窗口毛玻璃底色 */
+  --bg-window:    rgb(28, 28, 30);            /* v0.8.31: 不透明窗口底色（防 GPU 崩溃黑屏） */
   --bg-primary:   #1C1C1E;                   /* 最深层（侧边栏底） */
   --bg-secondary: #2C2C2E;                   /* 卡片层 */
   --bg-tertiary:  #3A3A3C;                   /* hover 层 */
   --bg-elevated:  #48484A;                   /* 按下/选中层 */
-  --bg-input:     rgba(58, 58, 60, 0.6);     /* 输入框毛玻璃 */
+  --bg-input:     rgb(58, 58, 60);            /* v0.8.31: 输入框底色（不透明，防黑屏） */
 
   /* === 文字 === */
   --text-primary:   #F5F5F7;   /* 主文字 */
@@ -127,8 +127,7 @@ body {
 .window-outer {
   border-radius: 16px;
   overflow: hidden;
-  /* v0.8.28: translateZ(0) 提升窗口为合成层（不加 will-change 避免预分配内存） */
-  transform: translateZ(0);
+  /* v0.8.31: 移除 translateZ(0)，减少合成层数量防止 GPU 内存耗尽黑屏 */
   contain: layout paint;
 }
 
@@ -138,13 +137,13 @@ body {
  *   - 顶部 1px 高光线（强化"屏幕"质感）
  *   - 整体 1px 内边框（强化圆角轮廓）
  *   - v0.8.27: blur(40px) saturate(180%) → blur(20px)，降低 Linux WebKitGTK 下 GPU 合成负载
- *   - v0.8.28: 恢复 translateZ(0) 提升窗口为合成层（v0.8.27 移除后窗口渲染退化为 CPU）
- *     不加 will-change（避免预分配内存），translateZ(0) 足够提升合成层
+ *   - v0.8.31: 移除 backdrop-filter + translateZ(0)，窗口背景改不透明色
+ *     原因：Wayland 下 transparent:true + backdrop-filter 依赖 GPU 合成器
+ *     GPU 内存耗尽时合成器崩溃 → 窗口黑屏
+ *     不透明背景 + 无 backdrop-filter = 零 GPU 合成依赖，彻底防黑屏
  */
 .window-glass {
   background: var(--bg-window);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   border-radius: 16px;
   box-shadow:
     var(--shadow-window),
@@ -152,21 +151,17 @@ body {
     inset 0 0 0 1px rgba(255, 255, 255, 0.06),   /* 整体 1px 内边框 */
     inset 0 0 32px rgba(0, 0, 0, 0.30),           /* 边缘 32px 深渐变（强化圆角） */
     inset 0 0 120px rgba(0, 0, 0, 0.12);          /* 边缘 120px 柔和渐变（vignette） */
-  transform: translateZ(0);
 }
 
 /* v0.8.27: 消息卡片去掉 backdrop-filter，改纯色背景
- *   原因：每条助手消息都有 blur(16px)，滚动时每卡片重新计算模糊 → 卡顿
- *   纯色 rgba 视觉效果几乎一致，但 GPU 开销降低 ~90%
+ *   v0.8.31: rgba(60,60,67,0.72) → rgb(60,60,67) 不透明色（防黑屏）
  */
 .card-glass {
-  background: rgba(60, 60, 67, 0.72);
+  background: rgb(60, 60, 67);
 }
 
 .input-glass {
   background: var(--bg-input);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
 }
 
 /* ============================================================

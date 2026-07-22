@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Lihua",
-  "version": "0.8.30",
+  "version": "0.8.31",
   "identifier": "cn.lihua.desktop",
   "build": {
     "frontendDist": "../dist",

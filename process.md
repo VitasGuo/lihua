@@ -4,10 +4,26 @@
 
 让普通用户也能省心用 Linux：自然语言 → 任务 → 自动执行 → 反馈，不用命令行。
 
-**当前版本**：v0.8.30-alpha（pyproject `0.8.30`，Wayland fcitx5 修复 + Linux 桌面诊断知识注入 + fix_ime skill）
-**阶段**：v0.7.0 UI 重构 + v0.7.1 增强 + v0.7.2 修复 + v0.7.3 极简模型设置 + v0.7.4 真机实测修复 + v0.7.5 细节精修 + GPU 加速 + 底层优化 + v0.7.6 下拉菜单 Portal 修复 + v0.7.7 日志系统 + v0.7.8 LogSheet 日志查看 UI + v0.7.9 流式输出 + Agent 多轮对话 + v0.7.10 AuditSheet 独立审计日志 + v0.7.11 beautify_ubuntu 能力扩展 + v0.7.12 Skill 库三层整合 + v0.7.13 交互式 confirm + sudo→pkexec + v0.7.14 Agent 行为优化 + v0.7.15 修复谎报成功 + 版本不匹配检测 + v0.8.0 run_shell 万能兜底工具 + v0.8.1 run_shell 安全增强 + v0.8.2 文件操作工具组 + v0.8.3 run_python 万能工具 + v0.8.4 confirm 弹窗富文本展示 + v0.8.5 新用户引导 + v0.8.6 confirm 超时修复 + v0.8.7 LLM 自我诊断能力增强 + v0.8.8 confirm 流程致命 bug 修复 + v0.8.9 自进化能力（self_restart / self_build / self_status）+ v0.8.10 自进化完善（self_version_bump + 前端 SSE 恢复）+ v0.8.11 二次进化第一支柱（记忆系统）+ v0.8.12 二次进化第二支柱（技能自生成）+ v0.8.13 二次进化第三支柱（模块化 Prompt 系统）+ v0.8.14 二次进化第四支柱（插件架构）+ v0.8.15 二次进化第五支柱（自监控分析）+ v0.8.16 记忆分层 + Skill 使用记录（参考 OpenClaw）+ v0.8.17 Skill 规则提升 + 月度归档（参考 OpenClaw）+ v0.8.18 踩坑记录机制（参考 trae 工作流）+ v0.8.19 UI 改进（窗口控制按钮 + 最大化铺满 + 底栏防误触）+ v0.8.20 记忆管理入口 + 思考链记录 + 上下文持久化 + 历史对话调取 + v0.8.21 ModelSheet 4 个 bug 修复 + v0.8.22 CLI 命令补全 + v0.8.23 Agent 聚焦本职 + v0.8.24 gui 启动自检+自动编译 + v0.8.25 ModelSheet 选模型退出 bug 修复 + 模型清单全面更新 + v0.8.26 ModelSheet 事件处理 DOM 级重构 + v0.8.27 滚动性能优化 + v0.8.28 滚动合成层提升 + v0.8.29 ConfirmSheet 布局修复 + confirm 超时自动关闭 + v0.8.30 Wayland fcitx5 候选框飘移+闪烁修复 + Linux 桌面诊断知识注入 + fix_ime skill
+**当前版本**：v0.8.31-alpha（pyproject `0.8.31`，GPU 黑屏修复——移除 will-change + 多余合成层 + backdrop-filter + 不透明背景色）
+**阶段**：v0.7.0 UI 重构 + v0.7.1 增强 + v0.7.2 修复 + v0.7.3 极简模型设置 + v0.7.4 真机实测修复 + v0.7.5 细节精修 + GPU 加速 + 底层优化 + v0.7.6 下拉菜单 Portal 修复 + v0.7.7 日志系统 + v0.7.8 LogSheet 日志查看 UI + v0.7.9 流式输出 + Agent 多轮对话 + v0.7.10 AuditSheet 独立审计日志 + v0.7.11 beautify_ubuntu 能力扩展 + v0.7.12 Skill 库三层整合 + v0.7.13 交互式 confirm + sudo→pkexec + v0.7.14 Agent 行为优化 + v0.7.15 修复谎报成功 + 版本不匹配检测 + v0.8.0 run_shell 万能兜底工具 + v0.8.1 run_shell 安全增强 + v0.8.2 文件操作工具组 + v0.8.3 run_python 万能工具 + v0.8.4 confirm 弹窗富文本展示 + v0.8.5 新用户引导 + v0.8.6 confirm 超时修复 + v0.8.7 LLM 自我诊断能力增强 + v0.8.8 confirm 流程致命 bug 修复 + v0.8.9 自进化能力（self_restart / self_build / self_status）+ v0.8.10 自进化完善（self_version_bump + 前端 SSE 恢复）+ v0.8.11 二次进化第一支柱（记忆系统）+ v0.8.12 二次进化第二支柱（技能自生成）+ v0.8.13 二次进化第三支柱（模块化 Prompt 系统）+ v0.8.14 二次进化第四支柱（插件架构）+ v0.8.15 二次进化第五支柱（自监控分析）+ v0.8.16 记忆分层 + Skill 使用记录（参考 OpenClaw）+ v0.8.17 Skill 规则提升 + 月度归档（参考 OpenClaw）+ v0.8.18 踩坑记录机制（参考 trae 工作流）+ v0.8.19 UI 改进（窗口控制按钮 + 最大化铺满 + 底栏防误触）+ v0.8.20 记忆管理入口 + 思考链记录 + 上下文持久化 + 历史对话调取 + v0.8.21 ModelSheet 4 个 bug 修复 + v0.8.22 CLI 命令补全 + v0.8.23 Agent 聚焦本职 + v0.8.24 gui 启动自检+自动编译 + v0.8.25 ModelSheet 选模型退出 bug 修复 + 模型清单全面更新 + v0.8.26 ModelSheet 事件处理 DOM 级重构 + v0.8.27 滚动性能优化 + v0.8.28 滚动合成层提升 + v0.8.29 ConfirmSheet 布局修复 + confirm 超时自动关闭 + v0.8.30 Wayland fcitx5 候选框飘移+闪烁修复 + Linux 桌面诊断知识注入 + fix_ime skill + v0.8.31 GPU 黑屏修复
 
 ## 版本历史
+
+### v0.8.31-alpha (2026-07-23) — GPU 黑屏修复（T087）
+
+**问题背景**：用户反馈"lihua 在回答问题时突然直接黑了，好像有什么东西直接把对话框遮住了一样"。日志中有 `Error reading events from display: 连接被对方重置`。
+
+**根因**：v0.8.28 引入的 GPU 合成层优化过度——`will-change: scroll-position` 预分配整个可滚动区域的 GPU 缓冲区，消息多时 GPU 内存耗尽→Wayland display 连接断开→黑屏。叠加多个 `translateZ(0)` + `backdrop-filter` + `transparent:true` + 半透明背景色，GPU 崩溃后窗口完全黑屏。
+
+**核心改造**（T087，4 处改动）：
+1. 移除 `will-change: scroll-position`（只保留 translateZ(0)）
+2. 移除 .window-outer 和 .window-glass 的 `translateZ(0)`（减少合成层数量）
+3. 移除所有 `backdrop-filter`（不透明背景上无意义，浪费 GPU）
+4. 所有背景色改为不透明（rgba→rgb，即使 GPU 崩溃也不黑屏）
+
+**全量审查**：检查了 Sheet 渲染、SSE 错误处理、内存泄漏、状态管理。发现两个非关键问题（setTimeout 无 cleanup、SSE 中断时 confirmPending 不清除），暂不修复。
+
+**验证**：v0.8.31 构建成功，启动正常，health API 确认 v0.8.31。CSS 从 27.76KB 降到 27.58KB。
 
 ### v0.8.30-alpha (2026-07-23) — Wayland fcitx5 修复 + 桌面诊断知识注入 + fix_ime skill（T086）
 

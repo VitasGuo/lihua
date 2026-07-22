@@ -29,7 +29,7 @@ const BACKEND_READY_TIMEOUT: Duration = Duration::from_secs(20);
 struct BackendHandle(Mutex<Option<Child>>);
 
 /// 应用版本（用于关于对话框）
-const APP_VERSION: &str = "0.8.30-alpha";
+const APP_VERSION: &str = "0.8.31-alpha";
 
 fn main_window(app: &AppHandle) -> Option<WebviewWindow> {
     app.get_webview_window("main")

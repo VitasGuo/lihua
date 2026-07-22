@@ -49,10 +49,11 @@ export function MessageList({ messages }: MessageListProps) {
     <div
       ref={containerRef}
       className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-6 overscroll-contain"
-      // v0.8.28: 强制滚动容器提升为合成层
-      //   WebKitGTK 下 overflow-y:auto 默认不走 GPU，每帧 CPU 重绘 → 卡顿
-      //   translateZ(0) + will-change:scroll-position 让滚动走 GPU 合成
-      style={{ transform: 'translateZ(0)', willChange: 'scroll-position' }}
+      // v0.8.31: 只保留 translateZ(0) 提升合成层
+      //   v0.8.28 加的 will-change:scroll-position 会预分配整个可滚动区域的 GPU 缓冲区
+      //   消息多时 GPU 内存耗尽 → Wayland display 连接断开 → 窗口黑屏
+      //   translateZ(0) 足够提升合成层，不需要 will-change 预分配
+      style={{ transform: 'translateZ(0)' }}
     >
       <div className="max-w-[640px] mx-auto space-y-6">
         {messages.map(m => (
